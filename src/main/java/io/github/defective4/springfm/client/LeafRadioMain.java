@@ -7,6 +7,8 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
 import io.github.defective4.springfm.client.util.FontUtils;
@@ -29,7 +31,7 @@ public class LeafRadioMain {
 
     protected void createContents() {
         shell = new Shell();
-        shell.setSize(450, 300);
+        shell.setSize(400, 275);
         shell.setText("LeafRadio");
         shell.setLayout(new GridLayout(1, false));
 
@@ -59,6 +61,22 @@ public class LeafRadioMain {
         serviceCombo.setEnabled(false);
         serviceCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
         serviceCombo.select(0);
+
+        Menu menu = new Menu(shell, SWT.BAR);
+        shell.setMenuBar(menu);
+
+        MenuItem serverMenu = new MenuItem(menu, SWT.CASCADE);
+        serverMenu.setText("Server");
+
+        Menu connectMenu = new Menu(serverMenu);
+        serverMenu.setMenu(connectMenu);
+
+        MenuItem connectItem = new MenuItem(connectMenu, SWT.NONE);
+        connectItem.setText("Connect...");
+
+        MenuItem disconnectItem = new MenuItem(connectMenu, SWT.NONE);
+        disconnectItem.setEnabled(false);
+        disconnectItem.setText("Disconnect");
     }
 
     public static void main(String[] args) {
