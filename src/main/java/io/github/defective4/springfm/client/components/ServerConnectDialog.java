@@ -1,4 +1,4 @@
-package io.github.defective4.springfm.client;
+package io.github.defective4.springfm.client.components;
 
 import java.net.URL;
 

@@ -1,4 +1,4 @@
-package io.github.defective4.springfm.client;
+package io.github.defective4.springfm.client.components;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

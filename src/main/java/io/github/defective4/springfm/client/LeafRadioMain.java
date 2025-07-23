@@ -15,6 +15,8 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
+import io.github.defective4.springfm.client.components.ProgressDialog;
+import io.github.defective4.springfm.client.components.ServerConnectDialog;
 import io.github.defective4.springfm.client.util.FontUtils;
 
 public class LeafRadioMain {
