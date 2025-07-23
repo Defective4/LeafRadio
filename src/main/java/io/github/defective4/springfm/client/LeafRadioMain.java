@@ -1,6 +1,8 @@
 package io.github.defective4.springfm.client;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -77,6 +79,13 @@ public class LeafRadioMain {
         MenuItem disconnectItem = new MenuItem(connectMenu, SWT.NONE);
         disconnectItem.setEnabled(false);
         disconnectItem.setText("Disconnect");
+
+        connectItem.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                System.out.println(new ServerConnectDialog(shell).open());
+            }
+        });
     }
 
     public static void main(String[] args) {
