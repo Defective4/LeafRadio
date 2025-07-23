@@ -1,5 +1,7 @@
 package io.github.defective4.springfm.client;
 
+import java.net.URL;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -83,7 +85,12 @@ public class LeafRadioMain {
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                System.out.println(new ServerConnectDialog(shell).open());
+                URL url = new ServerConnectDialog(shell).open();
+                if (url != null) {
+                    new ProgressDialog(shell, "Connecting...").open(() -> {
+
+                    });
+                }
             }
         });
     }

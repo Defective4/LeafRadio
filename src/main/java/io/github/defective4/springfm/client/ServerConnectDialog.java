@@ -18,8 +18,8 @@ import org.eclipse.swt.widgets.Shell;
 
 public class ServerConnectDialog extends Dialog {
 
-    protected URL result;
-    protected Shell shell;
+    private URL result;
+    private Shell shell;
 
     public ServerConnectDialog(Shell parent) {
         super(parent, SWT.APPLICATION_MODAL | SWT.CLOSE);
