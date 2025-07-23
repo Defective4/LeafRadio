@@ -3,7 +3,6 @@ package io.github.defective4.springfm.client;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -48,7 +47,7 @@ public class LeafRadioMain {
         stationSettingPanel.setLayout(new GridLayout(2, false));
 
         Composite serviceSettingPanel = new Composite(shlLeafradio, SWT.NONE);
-        serviceSettingPanel.setLayout(new GridLayout(3, false));
+        serviceSettingPanel.setLayout(new GridLayout(2, false));
         serviceSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 
         Label serviceLabel = new Label(serviceSettingPanel, SWT.NONE);
@@ -60,9 +59,6 @@ public class LeafRadioMain {
         serviceCombo.setEnabled(false);
         serviceCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
         serviceCombo.select(0);
-
-        Button connectButton = new Button(serviceSettingPanel, SWT.NONE);
-        connectButton.setText("Connect");
     }
 
     public static void main(String[] args) {
