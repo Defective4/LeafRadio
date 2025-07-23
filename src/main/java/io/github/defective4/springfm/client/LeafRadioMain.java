@@ -13,14 +13,14 @@ import io.github.defective4.springfm.client.util.FontUtils;
 
 public class LeafRadioMain {
 
-    protected Shell shlLeafradio;
+    protected Shell shell;
 
     public void open() {
         Display display = Display.getDefault();
         createContents();
-        shlLeafradio.open();
-        shlLeafradio.layout();
-        while (!shlLeafradio.isDisposed()) {
+        shell.open();
+        shell.layout();
+        while (!shell.isDisposed()) {
             if (!display.readAndDispatch()) {
                 display.sleep();
             }
@@ -28,25 +28,25 @@ public class LeafRadioMain {
     }
 
     protected void createContents() {
-        shlLeafradio = new Shell();
-        shlLeafradio.setSize(450, 300);
-        shlLeafradio.setText("LeafRadio");
-        shlLeafradio.setLayout(new GridLayout(1, false));
+        shell = new Shell();
+        shell.setSize(450, 300);
+        shell.setText("LeafRadio");
+        shell.setLayout(new GridLayout(1, false));
 
-        Label titleLabel = new Label(shlLeafradio, SWT.NONE);
+        Label titleLabel = new Label(shell, SWT.NONE);
         titleLabel.setFont(FontUtils.deriveFont(titleLabel.getFont(), 24, SWT.BOLD));
         titleLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1));
         titleLabel.setText("Not connected");
 
-        Label descriptionLabel = new Label(shlLeafradio, SWT.NONE);
+        Label descriptionLabel = new Label(shell, SWT.NONE);
         descriptionLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
         descriptionLabel.setText("Connect to a server to start listening");
 
-        Composite stationSettingPanel = new Composite(shlLeafradio, SWT.NONE);
+        Composite stationSettingPanel = new Composite(shell, SWT.NONE);
         stationSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
         stationSettingPanel.setLayout(new GridLayout(2, false));
 
-        Composite serviceSettingPanel = new Composite(shlLeafradio, SWT.NONE);
+        Composite serviceSettingPanel = new Composite(shell, SWT.NONE);
         serviceSettingPanel.setLayout(new GridLayout(2, false));
         serviceSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 
