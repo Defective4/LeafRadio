@@ -89,8 +89,7 @@ public class LeafRadioMain {
             public void widgetSelected(SelectionEvent e) {
                 URL url = new ServerConnectDialog(shell).open();
                 if (url != null) {
-                    new ProgressDialog(shell, "Connecting...").open(() -> {
-
+                    new ProgressDialog(shell, "Connecting...").open(shell -> {
                     });
                 }
             }

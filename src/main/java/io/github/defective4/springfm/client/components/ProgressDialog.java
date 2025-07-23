@@ -11,6 +11,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
@@ -28,14 +29,29 @@ public class ProgressDialog extends Dialog {
         setText("SWT Dialog");
     }
 
-    public void open(Runnable task) {
+    public void open(ProgressDialogTask task) {
         createContents();
         shell.open();
         shell.layout();
         Display display = getParent().getDisplay();
         THR_POOL.submit(() -> {
-            task.run();
-            Display.getDefault().asyncExec(() -> shell.dispose());
+            Exception ex;
+            try {
+                task.run(shell);
+                ex = null;
+            } catch (Exception e) {
+                ex = e;
+            }
+            Exception fex = ex;
+            Display.getDefault().asyncExec(() -> {
+                shell.dispose();
+                if (fex != null) {
+                    MessageBox exBox = new MessageBox(getParent(), SWT.OK);
+                    exBox.setText("An error occured");
+                    exBox.setMessage(fex.toString());
+                    exBox.open();
+                }
+            });
         });
         while (!shell.isDisposed()) {
             if (!display.readAndDispatch()) {
