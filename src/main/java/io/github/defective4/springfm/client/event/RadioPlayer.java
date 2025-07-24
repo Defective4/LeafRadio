@@ -46,6 +46,7 @@ public class RadioPlayer {
         sdl = AudioSystem.getSourceDataLine(new AudioFormat(171e3f, 16, 1, true, false));
         sdl.open();
         sdl.start();
+        listener.audioAnnotationReceived(new AudioAnnotation(null, null));
         task = executor.submit(() -> {
             try (DataInputStream in = new DataInputStream(client.connect(profile.getName()))) {
                 while (!task.isCancelled()) {

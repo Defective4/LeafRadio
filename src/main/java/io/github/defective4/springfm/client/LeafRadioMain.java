@@ -52,14 +52,14 @@ public class LeafRadioMain {
         shell.setText("LeafRadio");
         shell.setLayout(new GridLayout(1, false));
 
-        Label titleLabel = new Label(shell, SWT.NONE);
+        Label titleLabel = new Label(shell, SWT.CENTER);
         titleLabel.setFont(FontUtils.deriveFont(titleLabel.getFont(), 24, SWT.BOLD));
-        titleLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false, 1, 1));
+        titleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
         titleLabel.setText("Not connected");
 
-        Label descriptionLabel = new Label(shell, SWT.NONE);
-        descriptionLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
-        descriptionLabel.setText("Connect to a server to start listening");
+        Label descriptionLabel = new Label(shell, SWT.CENTER);
+        descriptionLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+        descriptionLabel.setText("Select a profile to start listening");
 
         Composite stationSettingPanel = new Composite(shell, SWT.NONE);
         stationSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
@@ -115,6 +115,9 @@ public class LeafRadioMain {
                 RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
                 disconnectItem.setEnabled(false);
                 connectItem.setEnabled(true);
+
+                descriptionLabel.setText("");
+                titleLabel.setText("Disconnected");
             }
         };
         disconnectItem.addSelectionListener(disconnectAdapter);
