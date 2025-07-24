@@ -3,7 +3,9 @@ package io.github.defective4.springfm.client.web;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -32,5 +34,18 @@ public class SpringFMClient {
         HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/stream").toURL()
                 .openConnection();
         return con.getInputStream();
+    }
+
+    public void setService(String profile, int index) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/service").toURL()
+                .openConnection();
+        con.setDoOutput(true);
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        try (Writer writer = new OutputStreamWriter(con.getOutputStream())) {
+            writer.write("index=" + index);
+        }
+
+        if (con.getResponseCode() >= 400) throw new IOException(con.getResponseMessage());
     }
 }

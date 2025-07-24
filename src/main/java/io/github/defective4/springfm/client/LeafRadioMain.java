@@ -1,5 +1,6 @@
 package io.github.defective4.springfm.client;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -116,6 +117,18 @@ public class LeafRadioMain {
 
         serviceCombo = new Combo(serviceSettingPanel, SWT.READ_ONLY);
         serviceCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        serviceCombo.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                try {
+                    client.setService(player.getProfile().getName(), serviceCombo.getSelectionIndex() - 1);
+                    serviceCombo.setEnabled(false);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    DialogUtils.showException(shell, e1);
+                }
+            }
+        });
 
         Menu menu = new Menu(shell, SWT.BAR);
         shell.setMenuBar(menu);

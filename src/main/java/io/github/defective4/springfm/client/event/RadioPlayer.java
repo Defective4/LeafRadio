@@ -26,6 +26,7 @@ public class RadioPlayer {
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final Gson gson = new Gson();
     private final PlayerEventListener listener;
+    private ProfileInformation profile;
     private SourceDataLine sdl;
     private Future<?> task;
 
@@ -37,6 +38,10 @@ public class RadioPlayer {
         return client;
     }
 
+    public ProfileInformation getProfile() {
+        return profile;
+    }
+
     public void setClient(SpringFMClient client) {
         this.client = client;
     }
@@ -46,6 +51,7 @@ public class RadioPlayer {
         sdl = AudioSystem.getSourceDataLine(new AudioFormat(171e3f, 16, 1, true, false));
         sdl.open();
         sdl.start();
+        this.profile = profile;
         listener.audioAnnotationReceived(new AudioAnnotation(null, null));
         task = executor.submit(() -> {
             try (DataInputStream in = new DataInputStream(client.connect(profile.getName()))) {
@@ -82,6 +88,7 @@ public class RadioPlayer {
         } finally {
             task = null;
             sdl = null;
+            profile = null;
         }
     }
 
