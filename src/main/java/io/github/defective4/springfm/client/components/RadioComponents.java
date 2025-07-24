@@ -40,6 +40,16 @@ public class RadioComponents {
             disabled.setEnabled(false);
             disabled.setText("(No available profiles)");
         } else {
+            MenuItem deselectItem = new MenuItem(profilesMenu, 0);
+            deselectItem.setText("(No profile)");
+            deselectItem.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    callback.profileSelected(null);
+                }
+            });
+
+            new MenuItem(profilesMenu, SWT.SEPARATOR);
             for (ProfileInformation info : profiles) {
                 MenuItem item = new MenuItem(profilesMenu, 0);
                 item.setText(info.getName());

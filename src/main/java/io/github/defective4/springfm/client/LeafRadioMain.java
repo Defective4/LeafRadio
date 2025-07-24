@@ -77,14 +77,16 @@ public class LeafRadioMain {
         }
     }
 
-    private void disconnect() {
+    private void disconnect(boolean profileOnly) {
         player.stop();
-        player.setClient(null);
-        client = null;
 
-        RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
-        disconnectItem.setEnabled(false);
-        connectItem.setEnabled(true);
+        if (!profileOnly) {
+            player.setClient(null);
+            client = null;
+            RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
+            disconnectItem.setEnabled(false);
+            connectItem.setEnabled(true);
+        }
 
         descriptionLabel.setText("Select a profile to start listening");
         titleLabel.setText("Not connected");
@@ -183,7 +185,7 @@ public class LeafRadioMain {
         disconnectItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                disconnect();
+                disconnect(false);
             }
         });
 
@@ -197,7 +199,10 @@ public class LeafRadioMain {
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
                             RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
-                                connectProfile(shell, profile);
+                                if (profile == null)
+                                    disconnect(true);
+                                else
+                                    connectProfile(shell, profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
@@ -216,6 +221,7 @@ public class LeafRadioMain {
         });
 
         player = new RadioPlayer(new PlayerEventListener() {
+
             @Override
             public void audioAnnotationReceived(AudioAnnotation annotation) {
                 titleLabel.setText(annotation.getTitle() == null ? "<No title>" : annotation.getTitle());
@@ -228,7 +234,7 @@ public class LeafRadioMain {
                 new SelectionAdapter() {
                     @Override
                     public void widgetSelected(SelectionEvent e) {
-                        disconnect();
+                        disconnect(true);
                     }
                 }.widgetSelected(null);
             }
@@ -239,9 +245,10 @@ public class LeafRadioMain {
                 serviceCombo.setEnabled(true);
                 updateStationControls();
             }
+
         });
 
-        disconnect();
+        disconnect(false);
     }
 
     public static void main(String[] args) {
