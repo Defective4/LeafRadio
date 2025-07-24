@@ -1,13 +1,17 @@
 package io.github.defective4.springfm.client.components;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Slider;
+import org.eclipse.swt.widgets.Scale;
+
+import io.github.defective4.springfm.client.util.RadioUnits;
 
 public class RadioComponents {
 
@@ -32,25 +36,42 @@ public class RadioComponents {
         stationCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
     }
 
-    public static void createStationFreqPanel(Composite serviceSettingPanel) {
-        Composite frequencyPanel = new Composite(serviceSettingPanel, SWT.NONE);
+    public static void createStationFreqPanel(Composite stationSettingPanel, float minFreq, int maxFreq, float step) {
+        Composite frequencyPanel = new Composite(stationSettingPanel, SWT.NONE);
         frequencyPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        frequencyPanel.setLayout(new GridLayout(7, false));
+        frequencyPanel.setLayout(new GridLayout(5, false));
 
         Label lblFreqMin = new Label(frequencyPanel, SWT.NONE);
-        lblFreqMin.setText("88 Mhz");
+        lblFreqMin.setText(RadioUnits.toHzUnits(minFreq));
 
         new Label(frequencyPanel, SWT.NONE);
 
-        Slider slider = new Slider(frequencyPanel, SWT.NONE);
-        slider.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        Scale freqScale = new Scale(frequencyPanel, SWT.NONE);
+        freqScale.setMaximum((int) (maxFreq / step));
+        freqScale.setMinimum((int) (minFreq / step));
+        freqScale.setSelection((int) (minFreq / step));
+        freqScale.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
         new Label(frequencyPanel, SWT.NONE);
 
         Label lblFreqMax = new Label(frequencyPanel, SWT.NONE);
-        lblFreqMax.setText("108 MHz");
+        lblFreqMax.setText(RadioUnits.toHzUnits(maxFreq));
         new Label(frequencyPanel, SWT.NONE);
         new Label(frequencyPanel, SWT.NONE);
+
+        Label lblFreqCurrent = new Label(frequencyPanel, SWT.NONE);
+        lblFreqCurrent.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+        lblFreqCurrent.setText("Current: 88 MHz");
+        new Label(frequencyPanel, SWT.NONE);
+        new Label(frequencyPanel, SWT.NONE);
+        new Label(stationSettingPanel, SWT.NONE);
+
+        freqScale.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                lblFreqCurrent.setText("Current: " + RadioUnits.toHzUnits(freqScale.getSelection() * step));
+            }
+        });
     }
 
 }
