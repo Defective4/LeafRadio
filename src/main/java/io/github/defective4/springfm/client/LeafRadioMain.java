@@ -102,6 +102,19 @@ public class LeafRadioMain {
 
         RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
 
+        disconnectItem.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                player.stop();
+                player.setClient(null);
+                client = null;
+
+                RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
+                disconnectItem.setEnabled(false);
+                connectItem.setEnabled(true);
+            }
+        });
+
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -119,6 +132,8 @@ public class LeafRadioMain {
                                     DialogUtils.showException(shell, e2);
                                 }
                             });
+                            disconnectItem.setEnabled(true);
+                            connectItem.setEnabled(false);
                             MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
                             box.setText("Success");
                             box.setMessage("Connected to " + response.getInstanceName()
