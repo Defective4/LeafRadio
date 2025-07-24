@@ -1,4 +1,4 @@
-package io.github.defective4.springfm.client.event;
+package io.github.defective4.springfm.client.player;
 
 import java.io.DataInputStream;
 import java.util.concurrent.ExecutorService;
@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
+import io.github.defective4.springfm.server.data.PlayerCommand;
 import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.packet.Packet;
 
@@ -66,6 +67,20 @@ public class RadioPlayer {
                                 AudioAnnotation annotation = gson.fromJson(payloadElement, AudioAnnotation.class);
                                 if (annotation != null)
                                     Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(annotation));
+                            }
+                            case "command" -> {
+                                PlayerCommand command = gson.fromJson(payloadElement, PlayerCommand.class);
+                                try {
+                                    switch (command.getCommand()) {
+                                        case PlayerCommand.COMMAND_CHANGE_SERVICE -> {
+                                            int index = Integer.parseInt(command.getData());
+                                            Display.getDefault().asyncExec(() -> listener.serviceChanged(index));
+                                        }
+                                        default -> {}
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
                             default -> {}
                         }

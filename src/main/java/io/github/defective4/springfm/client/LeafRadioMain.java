@@ -21,8 +21,8 @@ import org.eclipse.swt.widgets.Shell;
 import io.github.defective4.springfm.client.components.ProgressDialog;
 import io.github.defective4.springfm.client.components.RadioComponents;
 import io.github.defective4.springfm.client.components.ServerConnectDialog;
-import io.github.defective4.springfm.client.event.PlayerEventListener;
-import io.github.defective4.springfm.client.event.RadioPlayer;
+import io.github.defective4.springfm.client.player.PlayerEventListener;
+import io.github.defective4.springfm.client.player.RadioPlayer;
 import io.github.defective4.springfm.client.util.DialogUtils;
 import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
@@ -207,6 +207,12 @@ public class LeafRadioMain {
                         disconnect();
                     }
                 }.widgetSelected(null);
+            }
+
+            @Override
+            public void serviceChanged(int index) {
+                serviceCombo.select(index + 1);
+                serviceCombo.setEnabled(true);
             }
         });
 
