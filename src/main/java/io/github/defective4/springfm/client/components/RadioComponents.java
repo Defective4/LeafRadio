@@ -28,12 +28,20 @@ public class RadioComponents {
     }
 
     public static void createProfileItems(Menu profilesMenu, List<ProfileInformation> profiles) {
+        for (MenuItem item : profilesMenu.getItems()) item.dispose();
         if (profiles == null) {
             MenuItem disabled = new MenuItem(profilesMenu, 0);
             disabled.setEnabled(false);
             disabled.setText("(Connect to see available profiles)");
+        } else if (profiles.isEmpty()) {
+            MenuItem disabled = new MenuItem(profilesMenu, 0);
+            disabled.setEnabled(false);
+            disabled.setText("(No available profiles)");
         } else {
-
+            for (ProfileInformation info : profiles) {
+                MenuItem item = new MenuItem(profilesMenu, 0);
+                item.setText(info.getName());
+            }
         }
     }
 

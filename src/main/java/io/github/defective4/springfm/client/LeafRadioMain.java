@@ -13,14 +13,19 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import io.github.defective4.springfm.client.components.ProgressDialog;
 import io.github.defective4.springfm.client.components.RadioComponents;
 import io.github.defective4.springfm.client.components.ServerConnectDialog;
 import io.github.defective4.springfm.client.util.FontUtils;
+import io.github.defective4.springfm.client.web.SpringFMClient;
+import io.github.defective4.springfm.server.data.AuthResponse;
 
 public class LeafRadioMain {
+
+    private SpringFMClient client;
 
     protected Shell shell;
 
@@ -100,7 +105,19 @@ public class LeafRadioMain {
             public void widgetSelected(SelectionEvent e) {
                 URL url = new ServerConnectDialog(shell).open();
                 if (url != null) {
-                    new ProgressDialog(shell, "Connecting...").open(shell -> {});
+                    new ProgressDialog(shell, "Connecting...").open(shell -> {
+                        SpringFMClient client = new SpringFMClient(url);
+                        AuthResponse response = client.authenticate();
+                        Display.getDefault().asyncExec(() -> {
+                            RadioComponents.createProfileItems(profilesMenu, response.getProfiles());
+                            MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
+                            box.setText("Success");
+                            box.setMessage("Connected to " + response.getInstanceName()
+                                    + "!\nChoose a profile from the Server menu.");
+                            box.open();
+                        });
+                        LeafRadioMain.this.client = client;
+                    });
                 }
             }
         });
