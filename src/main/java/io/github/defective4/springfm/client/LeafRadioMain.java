@@ -16,6 +16,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
 import io.github.defective4.springfm.client.components.ProgressDialog;
+import io.github.defective4.springfm.client.components.RadioComponents;
 import io.github.defective4.springfm.client.components.ServerConnectDialog;
 import io.github.defective4.springfm.client.util.FontUtils;
 
@@ -83,6 +84,16 @@ public class LeafRadioMain {
         MenuItem disconnectItem = new MenuItem(connectMenu, SWT.NONE);
         disconnectItem.setEnabled(false);
         disconnectItem.setText("Disconnect");
+
+        new MenuItem(connectMenu, SWT.SEPARATOR);
+
+        MenuItem profilesItem = new MenuItem(connectMenu, SWT.CASCADE);
+        profilesItem.setText("Profile");
+
+        Menu profilesMenu = new Menu(profilesItem);
+        profilesItem.setMenu(profilesMenu);
+
+        RadioComponents.createProfileItems(profilesMenu, null);
 
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override

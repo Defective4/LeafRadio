@@ -26,5 +26,10 @@
             <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
             <version>3.130.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.defective4.radio</groupId>
+            <artifactId>commons</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>    
 </project>

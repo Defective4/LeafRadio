@@ -1,5 +1,7 @@
 package io.github.defective4.springfm.client.components;
 
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -9,9 +11,12 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Scale;
 
 import io.github.defective4.springfm.client.util.RadioUnits;
+import io.github.defective4.springfm.server.data.ProfileInformation;
 
 public class RadioComponents {
 
@@ -20,6 +25,16 @@ public class RadioComponents {
         applyStationButton.setEnabled(false);
         applyStationButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
         applyStationButton.setText("Apply");
+    }
+
+    public static void createProfileItems(Menu profilesMenu, List<ProfileInformation> profiles) {
+        if (profiles == null) {
+            MenuItem disabled = new MenuItem(profilesMenu, 0);
+            disabled.setEnabled(false);
+            disabled.setText("(Connect to see available profiles)");
+        } else {
+
+        }
     }
 
     public static void createStationComboPanel(Composite stationSettingPanel) {
