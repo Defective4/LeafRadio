@@ -33,7 +33,9 @@ public class SpringFMClient {
     public InputStream connectAudioChannel(String profile) throws IOException {
         HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/audio").toURL()
                 .openConnection();
-        return con.getInputStream();
+        InputStream in = con.getInputStream();
+        in.skip(44);
+        return in;
     }
 
     public InputStream connectDataChannel(String profile) throws IOException {
