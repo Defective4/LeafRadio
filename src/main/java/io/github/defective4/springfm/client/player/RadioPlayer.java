@@ -1,6 +1,7 @@
 package io.github.defective4.springfm.client.player;
 
 import java.io.DataInputStream;
+import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -23,13 +24,13 @@ import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.packet.Packet;
 
 public class RadioPlayer {
+    private Future<?> audioTask, dataTask;
     private SpringFMClient client;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final Gson gson = new Gson();
     private final PlayerEventListener listener;
     private ProfileInformation profile;
     private SourceDataLine sdl;
-    private Future<?> task;
 
     public RadioPlayer(PlayerEventListener listener) {
         this.listener = listener;
@@ -53,39 +54,62 @@ public class RadioPlayer {
         sdl.open();
         sdl.start();
         this.profile = profile;
-        listener.audioAnnotationReceived(new AudioAnnotation(null, null));
-        task = executor.submit(() -> {
-            try (DataInputStream in = new DataInputStream(client.connect(profile.getName()))) {
-                while (!task.isCancelled()) {
+        Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(new AudioAnnotation(null, null)));
+
+        Object lock = new Object();
+
+        audioTask = executor.submit(() -> {
+            try (InputStream audioIn = client.connectAudioChannel(profile.getName())) {
+                synchronized (lock) {
+                    lock.notify();
+                }
+                byte[] buffer = new byte[4096];
+                while (audioTask != null && !audioTask.isCancelled()) {
+                    int read = audioIn.read(buffer);
+                    sdl.write(buffer, 0, read);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                stop();
+                Display.getDefault().asyncExec(() -> listener.playerErrored(e));
+            }
+        });
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {}
+        }
+        dataTask = executor.submit(() -> {
+            try (DataInputStream in = new DataInputStream(client.connectDataChannel(profile.getName()))) {
+                synchronized (lock) {
+                    lock.notify();
+                }
+                while (dataTask != null && !dataTask.isCancelled()) {
                     Packet packet = Packet.fromStream(in);
-                    if (packet.getType() == Packet.TYPE_PAYLOAD) {
-                        JsonObject root = packet.getPayloadAsJSON();
-                        String key = root.get("key").getAsString();
-                        JsonElement payloadElement = root.get("payload");
-                        switch (key.toLowerCase()) {
-                            case "annotation" -> {
-                                AudioAnnotation annotation = gson.fromJson(payloadElement, AudioAnnotation.class);
-                                if (annotation != null)
-                                    Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(annotation));
-                            }
-                            case "command" -> {
-                                PlayerCommand command = gson.fromJson(payloadElement, PlayerCommand.class);
-                                try {
-                                    switch (command.getCommand()) {
-                                        case PlayerCommand.COMMAND_CHANGE_SERVICE -> {
-                                            int index = Integer.parseInt(command.getData());
-                                            Display.getDefault().asyncExec(() -> listener.serviceChanged(index));
-                                        }
-                                        default -> {}
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            default -> {}
+                    JsonObject root = packet.getPayloadAsJSON();
+                    String key = root.get("key").getAsString();
+                    JsonElement payloadElement = root.get("payload");
+                    switch (key.toLowerCase()) {
+                        case "annotation" -> {
+                            AudioAnnotation annotation = gson.fromJson(payloadElement, AudioAnnotation.class);
+                            if (annotation != null)
+                                Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(annotation));
                         }
-                    } else {
-                        sdl.write(packet.getPayload(), 0, packet.getPayload().length);
+                        case "command" -> {
+                            PlayerCommand command = gson.fromJson(payloadElement, PlayerCommand.class);
+                            try {
+                                switch (command.getCommand()) {
+                                    case PlayerCommand.COMMAND_CHANGE_SERVICE -> {
+                                        int index = Integer.parseInt(command.getData());
+                                        Display.getDefault().asyncExec(() -> listener.serviceChanged(index));
+                                    }
+                                    default -> {}
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        default -> {}
                     }
                 }
             } catch (Exception e) {
@@ -94,14 +118,21 @@ public class RadioPlayer {
                 Display.getDefault().asyncExec(() -> listener.playerErrored(e));
             }
         });
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {}
+        }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         try {
-            if (task != null) task.cancel(true);
+            if (audioTask != null) audioTask.cancel(true);
+            if (dataTask != null) dataTask.cancel(true);
             if (sdl != null) sdl.close();
         } finally {
-            task = null;
+            audioTask = null;
+            dataTask = null;
             sdl = null;
             profile = null;
         }

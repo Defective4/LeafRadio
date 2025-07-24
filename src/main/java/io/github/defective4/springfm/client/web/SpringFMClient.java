@@ -30,8 +30,14 @@ public class SpringFMClient {
         }
     }
 
-    public InputStream connect(String profile) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/stream").toURL()
+    public InputStream connectAudioChannel(String profile) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/audio").toURL()
+                .openConnection();
+        return con.getInputStream();
+    }
+
+    public InputStream connectDataChannel(String profile) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/data").toURL()
                 .openConnection();
         return con.getInputStream();
     }

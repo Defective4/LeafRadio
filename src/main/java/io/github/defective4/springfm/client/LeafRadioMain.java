@@ -59,22 +59,23 @@ public class LeafRadioMain {
         }
     }
 
-    private void connectProfile(Shell shell, ProfileInformation profile) {
-        List<ServiceInformation> services = profile.getServices();
-        String[] items = new String[services.size() + 1];
-        for (int i = 0; i < services.size(); i++) {
-            items[i + 1] = services.get(i).getName();
-        }
-        items[0] = "(No service)";
-        serviceCombo.setItems(items);
-        serviceCombo.setEnabled(true);
-        serviceCombo.select(0);
-        updateStationControls();
-        try {
+    private void connectProfile(ProfileInformation profile) {
+        new ProgressDialog(shell, "Connecting...").open(dial -> {
             player.start(profile);
-        } catch (Exception e2) {
-            DialogUtils.showException(shell, e2);
-        }
+            Display.getDefault().asyncExec(() -> {
+                List<ServiceInformation> services = profile.getServices();
+                String[] items = new String[services.size() + 1];
+                for (int i = 0; i < services.size(); i++) {
+                    items[i + 1] = services.get(i).getName();
+                }
+                items[0] = "(No service)";
+                serviceCombo.setItems(items);
+                serviceCombo.setEnabled(true);
+                serviceCombo.select(0);
+                updateStationControls();
+            });
+        });
+
     }
 
     private void disconnect(boolean profileOnly) {
@@ -202,7 +203,7 @@ public class LeafRadioMain {
                                 if (profile == null)
                                     disconnect(true);
                                 else
-                                    connectProfile(shell, profile);
+                                    connectProfile(profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);

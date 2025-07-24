@@ -41,6 +41,7 @@ public class ProgressDialog extends Dialog {
                 task.run(shell);
                 ex = null;
             } catch (Exception e) {
+                e.printStackTrace();
                 ex = e;
             }
             Exception fex = ex;
