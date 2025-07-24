@@ -27,6 +27,7 @@ import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
+import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioMain {
@@ -51,6 +52,23 @@ public class LeafRadioMain {
             if (!display.readAndDispatch()) {
                 display.sleep();
             }
+        }
+    }
+
+    private void connectProfile(Shell shell, ProfileInformation profile) {
+        List<ServiceInformation> services = profile.getServices();
+        String[] items = new String[services.size() + 1];
+        for (int i = 0; i < services.size(); i++) {
+            items[i + 1] = services.get(i).getName();
+        }
+        items[0] = "(No service)";
+        serviceCombo.setItems(items);
+        serviceCombo.setEnabled(true);
+        serviceCombo.select(0);
+        try {
+            player.start(profile);
+        } catch (Exception e2) {
+            DialogUtils.showException(shell, e2);
         }
     }
 
@@ -142,27 +160,14 @@ public class LeafRadioMain {
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
                             RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
-                                List<ServiceInformation> services = profile.getServices();
-                                String[] items = new String[services.size() + 1];
-                                for (int i = 0; i < services.size(); i++) {
-                                    items[i + 1] = services.get(i).getName();
-                                }
-                                items[0] = "(No service)";
-                                serviceCombo.setItems(items);
-                                serviceCombo.setEnabled(true);
-                                serviceCombo.select(0);
-                                try {
-                                    player.start(profile);
-                                } catch (Exception e2) {
-                                    DialogUtils.showException(shell, e2);
-                                }
+                                connectProfile(shell, profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
                             MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
                             box.setText("Success");
-                            box.setMessage("Connected to " + response.getInstanceName()
-                                    + "!\nChoose a profile from the Server menu.");
+                            box.setMessage("Connected to \"" + response.getInstanceName()
+                                    + "\"!\nChoose a profile from the Server menu.");
                             box.open();
                         });
                         LeafRadioMain.this.client = client;
@@ -170,6 +175,7 @@ public class LeafRadioMain {
                     });
                 }
             }
+
         });
 
         player = new RadioPlayer(new PlayerEventListener() {
