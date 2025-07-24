@@ -19,6 +19,8 @@ import org.eclipse.swt.widgets.Shell;
 import io.github.defective4.springfm.client.components.ProgressDialog;
 import io.github.defective4.springfm.client.components.RadioComponents;
 import io.github.defective4.springfm.client.components.ServerConnectDialog;
+import io.github.defective4.springfm.client.event.PlayerEventListener;
+import io.github.defective4.springfm.client.event.RadioPlayer;
 import io.github.defective4.springfm.client.util.DialogUtils;
 import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
@@ -27,7 +29,7 @@ import io.github.defective4.springfm.server.data.AuthResponse;
 public class LeafRadioMain {
 
     private SpringFMClient client;
-    private final RadioPlayer player = new RadioPlayer();
+    private RadioPlayer player;
 
     protected Shell shell;
 
@@ -102,7 +104,7 @@ public class LeafRadioMain {
 
         RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
 
-        disconnectItem.addSelectionListener(new SelectionAdapter() {
+        SelectionAdapter disconnectAdapter = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 player.stop();
@@ -113,7 +115,8 @@ public class LeafRadioMain {
                 disconnectItem.setEnabled(false);
                 connectItem.setEnabled(true);
             }
-        });
+        };
+        disconnectItem.addSelectionListener(disconnectAdapter);
 
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -144,6 +147,14 @@ public class LeafRadioMain {
                         player.setClient(client);
                     });
                 }
+            }
+        });
+
+        player = new RadioPlayer(new PlayerEventListener() {
+            @Override
+            public void playerErrored(Exception ex) {
+                DialogUtils.showException(shell, ex);
+                disconnectAdapter.widgetSelected(null);
             }
         });
     }

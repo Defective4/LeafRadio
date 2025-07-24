@@ -1,4 +1,4 @@
-package io.github.defective4.springfm.client;
+package io.github.defective4.springfm.client.event;
 
 import java.io.DataInputStream;
 import java.util.concurrent.ExecutorService;
@@ -10,6 +10,8 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
+import org.eclipse.swt.widgets.Display;
+
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.packet.Packet;
@@ -17,8 +19,13 @@ import io.github.defective4.springfm.server.packet.Packet;
 public class RadioPlayer {
     private SpringFMClient client;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final PlayerEventListener listener;
     private SourceDataLine sdl;
     private Future<?> task;
+
+    public RadioPlayer(PlayerEventListener listener) {
+        this.listener = listener;
+    }
 
     public SpringFMClient getClient() {
         return client;
@@ -44,6 +51,7 @@ public class RadioPlayer {
             } catch (Exception e) {
                 e.printStackTrace();
                 stop();
+                Display.getDefault().asyncExec(() -> listener.playerErrored(e));
             }
         });
     }
