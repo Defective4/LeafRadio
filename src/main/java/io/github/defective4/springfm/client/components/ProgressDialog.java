@@ -11,9 +11,10 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
+
+import io.github.defective4.springfm.client.util.DialogUtils;
 
 public class ProgressDialog extends Dialog {
 
@@ -45,13 +46,10 @@ public class ProgressDialog extends Dialog {
             Exception fex = ex;
             Display.getDefault().asyncExec(() -> {
                 shell.dispose();
-                if (fex != null) {
-                    MessageBox exBox = new MessageBox(getParent(), SWT.OK);
-                    exBox.setText("An error occured");
-                    exBox.setMessage(fex.toString());
-                    exBox.open();
-                }
             });
+            if (fex != null) {
+                DialogUtils.showException(getParent(), fex);
+            }
         });
         while (!shell.isDisposed()) {
             if (!display.readAndDispatch()) {

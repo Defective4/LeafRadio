@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Shell;
 import io.github.defective4.springfm.client.components.ProgressDialog;
 import io.github.defective4.springfm.client.components.RadioComponents;
 import io.github.defective4.springfm.client.components.ServerConnectDialog;
+import io.github.defective4.springfm.client.util.DialogUtils;
 import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AuthResponse;
@@ -26,6 +27,7 @@ import io.github.defective4.springfm.server.data.AuthResponse;
 public class LeafRadioMain {
 
     private SpringFMClient client;
+    private final RadioPlayer player = new RadioPlayer();
 
     protected Shell shell;
 
@@ -98,7 +100,7 @@ public class LeafRadioMain {
         Menu profilesMenu = new Menu(profilesItem);
         profilesItem.setMenu(profilesMenu);
 
-        RadioComponents.createProfileItems(profilesMenu, null);
+        RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
 
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -109,7 +111,14 @@ public class LeafRadioMain {
                         SpringFMClient client = new SpringFMClient(url);
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
-                            RadioComponents.createProfileItems(profilesMenu, response.getProfiles());
+                            RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
+                                player.stop();
+                                try {
+                                    player.start(profile);
+                                } catch (Exception e2) {
+                                    DialogUtils.showException(shell, e2);
+                                }
+                            });
                             MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
                             box.setText("Success");
                             box.setMessage("Connected to " + response.getInstanceName()
@@ -117,6 +126,7 @@ public class LeafRadioMain {
                             box.open();
                         });
                         LeafRadioMain.this.client = client;
+                        player.setClient(client);
                     });
                 }
             }

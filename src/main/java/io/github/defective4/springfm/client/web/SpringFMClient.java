@@ -1,6 +1,7 @@
 package io.github.defective4.springfm.client.web;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
@@ -25,5 +26,11 @@ public class SpringFMClient {
         try (Reader reader = new InputStreamReader(con.getInputStream())) {
             return gson.fromJson(reader, AuthResponse.class);
         }
+    }
+
+    public InputStream connect(String profile) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/stream").toURL()
+                .openConnection();
+        return con.getInputStream();
     }
 }

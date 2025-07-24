@@ -15,6 +15,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Scale;
 
+import io.github.defective4.springfm.client.ProfileSelectionCallback;
 import io.github.defective4.springfm.client.util.RadioUnits;
 import io.github.defective4.springfm.server.data.ProfileInformation;
 
@@ -27,7 +28,8 @@ public class RadioComponents {
         applyStationButton.setText("Apply");
     }
 
-    public static void createProfileItems(Menu profilesMenu, List<ProfileInformation> profiles) {
+    public static void createProfileItems(Menu profilesMenu, List<ProfileInformation> profiles,
+            ProfileSelectionCallback callback) {
         for (MenuItem item : profilesMenu.getItems()) item.dispose();
         if (profiles == null) {
             MenuItem disabled = new MenuItem(profilesMenu, 0);
@@ -41,6 +43,12 @@ public class RadioComponents {
             for (ProfileInformation info : profiles) {
                 MenuItem item = new MenuItem(profilesMenu, 0);
                 item.setText(info.getName());
+                item.addSelectionListener(new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        callback.profileSelected(info);
+                    }
+                });
             }
         }
     }
