@@ -24,6 +24,7 @@ import io.github.defective4.springfm.client.event.RadioPlayer;
 import io.github.defective4.springfm.client.util.DialogUtils;
 import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
+import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 
 public class LeafRadioMain {
@@ -151,6 +152,12 @@ public class LeafRadioMain {
         });
 
         player = new RadioPlayer(new PlayerEventListener() {
+            @Override
+            public void audioAnnotationReceived(AudioAnnotation annotation) {
+                titleLabel.setText(annotation.getTitle() == null ? "<No title>" : annotation.getTitle());
+                descriptionLabel.setText(annotation.getDescription() == null ? "" : annotation.getDescription());
+            }
+
             @Override
             public void playerErrored(Exception ex) {
                 DialogUtils.showException(shell, ex);

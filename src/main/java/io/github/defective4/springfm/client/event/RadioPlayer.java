@@ -12,13 +12,19 @@ import javax.sound.sampled.SourceDataLine;
 
 import org.eclipse.swt.widgets.Display;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import io.github.defective4.springfm.client.web.SpringFMClient;
+import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.packet.Packet;
 
 public class RadioPlayer {
     private SpringFMClient client;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final Gson gson = new Gson();
     private final PlayerEventListener listener;
     private SourceDataLine sdl;
     private Future<?> task;
@@ -44,7 +50,19 @@ public class RadioPlayer {
             try (DataInputStream in = new DataInputStream(client.connect(profile.getName()))) {
                 while (!task.isCancelled()) {
                     Packet packet = Packet.fromStream(in);
-                    if (packet.getType() == Packet.TYPE_PAYLOAD) {} else {
+                    if (packet.getType() == Packet.TYPE_PAYLOAD) {
+                        JsonObject root = packet.getPayloadAsJSON();
+                        String key = root.get("key").getAsString();
+                        JsonElement payloadElement = root.get("payload");
+                        switch (key.toLowerCase()) {
+                            case "annotation" -> {
+                                AudioAnnotation annotation = gson.fromJson(payloadElement, AudioAnnotation.class);
+                                if (annotation != null)
+                                    Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(annotation));
+                            }
+                            default -> {}
+                        }
+                    } else {
                         sdl.write(packet.getPayload(), 0, packet.getPayload().length);
                     }
                 }
