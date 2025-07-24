@@ -1,6 +1,7 @@
 package io.github.defective4.springfm.client;
 
 import java.net.URL;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -26,6 +27,7 @@ import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
+import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioMain {
 
@@ -140,7 +142,15 @@ public class LeafRadioMain {
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
                             RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
-                                player.stop();
+                                List<ServiceInformation> services = profile.getServices();
+                                String[] items = new String[services.size() + 1];
+                                for (int i = 0; i < services.size(); i++) {
+                                    items[i + 1] = services.get(i).getName();
+                                }
+                                items[0] = "(No service)";
+                                serviceCombo.setItems(items);
+                                serviceCombo.setEnabled(true);
+                                serviceCombo.select(0);
                                 try {
                                     player.start(profile);
                                 } catch (Exception e2) {
