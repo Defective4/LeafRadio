@@ -30,8 +30,14 @@ import io.github.defective4.springfm.server.data.AuthResponse;
 public class LeafRadioMain {
 
     private SpringFMClient client;
-    private RadioPlayer player;
+    private MenuItem connectItem;
 
+    private Label descriptionLabel;
+    private MenuItem disconnectItem;
+    private RadioPlayer player;
+    private Menu profilesMenu;
+    private Combo serviceCombo;
+    private Label titleLabel;
     protected Shell shell;
 
     public void open() {
@@ -46,20 +52,35 @@ public class LeafRadioMain {
         }
     }
 
+    private void disconnect() {
+        player.stop();
+        player.setClient(null);
+        client = null;
+
+        RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
+        disconnectItem.setEnabled(false);
+        connectItem.setEnabled(true);
+
+        descriptionLabel.setText("Select a profile to start listening");
+        titleLabel.setText("Not connected");
+
+        serviceCombo.setItems(new String[] { "Not connected" });
+        serviceCombo.setEnabled(false);
+        serviceCombo.select(0);
+    }
+
     protected void createContents() {
         shell = new Shell();
         shell.setSize(400, 275);
         shell.setText("LeafRadio");
         shell.setLayout(new GridLayout(1, false));
 
-        Label titleLabel = new Label(shell, SWT.CENTER);
+        titleLabel = new Label(shell, SWT.CENTER);
         titleLabel.setFont(FontUtils.deriveFont(titleLabel.getFont(), 24, SWT.BOLD));
         titleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        titleLabel.setText("Not connected");
 
-        Label descriptionLabel = new Label(shell, SWT.CENTER);
+        descriptionLabel = new Label(shell, SWT.CENTER);
         descriptionLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-        descriptionLabel.setText("Select a profile to start listening");
 
         Composite stationSettingPanel = new Composite(shell, SWT.NONE);
         stationSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
@@ -73,11 +94,8 @@ public class LeafRadioMain {
         serviceLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
         serviceLabel.setText("Service: ");
 
-        Combo serviceCombo = new Combo(serviceSettingPanel, SWT.READ_ONLY);
-        serviceCombo.setItems(new String[] { "Not connected" });
-        serviceCombo.setEnabled(false);
+        serviceCombo = new Combo(serviceSettingPanel, SWT.READ_ONLY);
         serviceCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        serviceCombo.select(0);
 
         Menu menu = new Menu(shell, SWT.BAR);
         shell.setMenuBar(menu);
@@ -88,10 +106,10 @@ public class LeafRadioMain {
         Menu connectMenu = new Menu(serverMenu);
         serverMenu.setMenu(connectMenu);
 
-        MenuItem connectItem = new MenuItem(connectMenu, SWT.NONE);
+        connectItem = new MenuItem(connectMenu, SWT.NONE);
         connectItem.setText("Connect...");
 
-        MenuItem disconnectItem = new MenuItem(connectMenu, SWT.NONE);
+        disconnectItem = new MenuItem(connectMenu, SWT.NONE);
         disconnectItem.setEnabled(false);
         disconnectItem.setText("Disconnect");
 
@@ -100,27 +118,17 @@ public class LeafRadioMain {
         MenuItem profilesItem = new MenuItem(connectMenu, SWT.CASCADE);
         profilesItem.setText("Profile");
 
-        Menu profilesMenu = new Menu(profilesItem);
+        profilesMenu = new Menu(profilesItem);
         profilesItem.setMenu(profilesMenu);
 
         RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
 
-        SelectionAdapter disconnectAdapter = new SelectionAdapter() {
+        disconnectItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                player.stop();
-                player.setClient(null);
-                client = null;
-
-                RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
-                disconnectItem.setEnabled(false);
-                connectItem.setEnabled(true);
-
-                descriptionLabel.setText("");
-                titleLabel.setText("Disconnected");
+                disconnect();
             }
-        };
-        disconnectItem.addSelectionListener(disconnectAdapter);
+        });
 
         connectItem.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -164,9 +172,16 @@ public class LeafRadioMain {
             @Override
             public void playerErrored(Exception ex) {
                 DialogUtils.showException(shell, ex);
-                disconnectAdapter.widgetSelected(null);
+                new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        disconnect();
+                    }
+                }.widgetSelected(null);
             }
         });
+
+        disconnect();
     }
 
     public static void main(String[] args) {
