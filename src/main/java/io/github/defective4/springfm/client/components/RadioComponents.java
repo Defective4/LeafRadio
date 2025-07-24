@@ -53,7 +53,7 @@ public class RadioComponents {
         }
     }
 
-    public static void createStationComboPanel(Composite stationSettingPanel) {
+    public static void createStationComboPanel(Composite stationSettingPanel, List<String> stations) {
         Composite stationPanel = new Composite(stationSettingPanel, SWT.NONE);
         stationPanel.setLayout(new GridLayout(2, false));
         stationPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -63,7 +63,7 @@ public class RadioComponents {
         stationLabel.setText("Station: ");
 
         Combo stationCombo = new Combo(stationPanel, SWT.READ_ONLY);
-        stationCombo.setItems(new String[] {});
+        stationCombo.setItems(stations.toArray(new String[0]));
         stationCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
     }
 

@@ -11,6 +11,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
@@ -28,6 +29,7 @@ import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
+import io.github.defective4.springfm.server.data.DigitalTuningInformation;
 import io.github.defective4.springfm.server.data.ProfileInformation;
 import io.github.defective4.springfm.server.data.ServiceInformation;
 
@@ -41,6 +43,7 @@ public class LeafRadioMain {
     private RadioPlayer player;
     private Menu profilesMenu;
     private Combo serviceCombo;
+    private Composite stationSettingPanel;
     private Label titleLabel;
     protected Shell shell;
 
@@ -66,6 +69,7 @@ public class LeafRadioMain {
         serviceCombo.setItems(items);
         serviceCombo.setEnabled(true);
         serviceCombo.select(0);
+        updateStationControls();
         try {
             player.start(profile);
         } catch (Exception e2) {
@@ -88,6 +92,25 @@ public class LeafRadioMain {
         serviceCombo.setItems(new String[] { "Not connected" });
         serviceCombo.setEnabled(false);
         serviceCombo.select(0);
+
+        updateStationControls();
+    }
+
+    private void updateStationControls() {
+        int index = serviceCombo.getSelectionIndex() - 1;
+        for (Control ctl : stationSettingPanel.getChildren()) ctl.dispose();
+        if (index >= 0) {
+            ServiceInformation svcInfo = player.getProfile().getServices().get(index);
+            switch (svcInfo.getTuningType()) {
+                case ServiceInformation.TUNING_TYPE_DIGITAL -> {
+                    DigitalTuningInformation tuningInfo = svcInfo.getDigitalTuning();
+                    RadioComponents.createStationComboPanel(stationSettingPanel, tuningInfo.getStations());
+                }
+                default -> {}
+            }
+            RadioComponents.createApplyStationButton(stationSettingPanel);
+            shell.layout(true, true);
+        }
     }
 
     protected void createContents() {
@@ -103,7 +126,7 @@ public class LeafRadioMain {
         descriptionLabel = new Label(shell, SWT.CENTER);
         descriptionLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 
-        Composite stationSettingPanel = new Composite(shell, SWT.NONE);
+        stationSettingPanel = new Composite(shell, SWT.NONE);
         stationSettingPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
         stationSettingPanel.setLayout(new GridLayout(2, false));
 
@@ -123,6 +146,7 @@ public class LeafRadioMain {
                 try {
                     client.setService(player.getProfile().getName(), serviceCombo.getSelectionIndex() - 1);
                     serviceCombo.setEnabled(false);
+                    updateStationControls();
                 } catch (IOException e1) {
                     e1.printStackTrace();
                     DialogUtils.showException(shell, e1);
@@ -213,6 +237,7 @@ public class LeafRadioMain {
             public void serviceChanged(int index) {
                 serviceCombo.select(index + 1);
                 serviceCombo.setEnabled(true);
+                updateStationControls();
             }
         });
 
