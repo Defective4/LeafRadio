@@ -9,6 +9,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -113,7 +114,27 @@ public class LeafRadioMain {
                 }
                 default -> {}
             }
-            RadioComponents.createApplyStationButton(stationSettingPanel);
+            Button applyBtn = RadioComponents.createApplyStationButton(stationSettingPanel);
+            if (stationCombo != null) {
+                applyBtn.addSelectionListener(new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        try {
+                            client.digitalTune(player.getProfile().getName(), stationCombo.getSelectionIndex());
+                            applyBtn.setEnabled(false);
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                            DialogUtils.showException(shell, e1);
+                        }
+                    }
+                });
+                stationCombo.addSelectionListener(new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        applyBtn.setEnabled(true);
+                    }
+                });
+            }
             shell.layout(true, true);
         }
     }

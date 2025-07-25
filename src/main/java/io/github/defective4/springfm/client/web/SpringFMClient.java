@@ -44,6 +44,19 @@ public class SpringFMClient {
         return con.getInputStream();
     }
 
+    public void digitalTune(String profile, int index) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/tune/digital").toURL()
+                .openConnection();
+        con.setDoOutput(true);
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        try (Writer writer = new OutputStreamWriter(con.getOutputStream())) {
+            writer.write("index=" + index);
+        }
+
+        if (con.getResponseCode() >= 400) throw new IOException(con.getResponseMessage());
+    }
+
     public void setService(String profile, int index) throws IOException {
         HttpURLConnection con = (HttpURLConnection) URI.create(baseURL + "profile/" + profile + "/service").toURL()
                 .openConnection();

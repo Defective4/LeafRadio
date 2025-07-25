@@ -21,11 +21,12 @@ import io.github.defective4.springfm.server.data.ProfileInformation;
 
 public class RadioComponents {
 
-    public static void createApplyStationButton(Composite stationSettingPanel) {
+    public static Button createApplyStationButton(Composite stationSettingPanel) {
         Button applyStationButton = new Button(stationSettingPanel, SWT.NONE);
         applyStationButton.setEnabled(false);
         applyStationButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
         applyStationButton.setText("Apply");
+        return applyStationButton;
     }
 
     public static void createProfileItems(Menu profilesMenu, List<ProfileInformation> profiles,
