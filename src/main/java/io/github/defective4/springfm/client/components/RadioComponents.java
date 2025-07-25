@@ -1,6 +1,7 @@
 package io.github.defective4.springfm.client.components;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -80,10 +81,11 @@ public class RadioComponents {
         return stationCombo;
     }
 
-    public static void createStationFreqPanel(Composite stationSettingPanel, float minFreq, int maxFreq, float step) {
+    public static Scale createStationFreqPanel(Composite stationSettingPanel, float minFreq, float maxFreq, float step,
+            Function<Composite, Button> applyButton) {
         Composite frequencyPanel = new Composite(stationSettingPanel, SWT.NONE);
         frequencyPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        frequencyPanel.setLayout(new GridLayout(5, false));
+        frequencyPanel.setLayout(new GridLayout(6, false));
 
         Label lblFreqMin = new Label(frequencyPanel, SWT.NONE);
         lblFreqMin.setText(RadioUnits.toHzUnits(minFreq));
@@ -100,11 +102,13 @@ public class RadioComponents {
 
         Label lblFreqMax = new Label(frequencyPanel, SWT.NONE);
         lblFreqMax.setText(RadioUnits.toHzUnits(maxFreq));
+        applyButton.apply(frequencyPanel);
         new Label(frequencyPanel, SWT.NONE);
         new Label(frequencyPanel, SWT.NONE);
 
         Label lblFreqCurrent = new Label(frequencyPanel, SWT.NONE);
         lblFreqCurrent.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+        new Label(frequencyPanel, SWT.NONE);
         lblFreqCurrent.setText("Current: 88 MHz");
         new Label(frequencyPanel, SWT.NONE);
         new Label(frequencyPanel, SWT.NONE);
@@ -116,6 +120,8 @@ public class RadioComponents {
                 lblFreqCurrent.setText("Current: " + RadioUnits.toHzUnits(freqScale.getSelection() * step));
             }
         });
+
+        return freqScale;
     }
 
 }

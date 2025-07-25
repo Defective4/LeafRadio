@@ -3,6 +3,7 @@ package io.github.defective4.springfm.client;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -18,6 +19,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Shell;
 
 import io.github.defective4.springfm.client.components.ProgressDialog;
@@ -28,6 +30,7 @@ import io.github.defective4.springfm.client.player.RadioPlayer;
 import io.github.defective4.springfm.client.util.DialogUtils;
 import io.github.defective4.springfm.client.util.FontUtils;
 import io.github.defective4.springfm.client.web.SpringFMClient;
+import io.github.defective4.springfm.server.data.AnalogTuningInformation;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
@@ -41,13 +44,14 @@ public class LeafRadioMain {
 
     private Label descriptionLabel;
     private MenuItem disconnectItem;
+    private Scale freqScale;
     private RadioPlayer player;
     private Menu profilesMenu;
     private Combo serviceCombo;
     private Combo stationCombo;
     private Composite stationSettingPanel;
-    private Label titleLabel;
 
+    private Label titleLabel;
     protected Shell shell;
 
     public void open() {
@@ -106,16 +110,30 @@ public class LeafRadioMain {
         for (Control ctl : stationSettingPanel.getChildren()) ctl.dispose();
         if (index >= 0) {
             ServiceInformation svcInfo = player.getProfile().getServices().get(index);
+            Button applyBtn;
             switch (svcInfo.getTuningType()) {
                 case ServiceInformation.TUNING_TYPE_DIGITAL -> {
                     DigitalTuningInformation tuningInfo = svcInfo.getDigitalTuning();
                     stationCombo = RadioComponents.createStationComboPanel(stationSettingPanel,
                             tuningInfo.getStations());
+                    applyBtn = RadioComponents.createApplyStationButton(stationSettingPanel);
                 }
-                default -> {}
+                case ServiceInformation.TUNING_TYPE_ANALOG -> {
+                    AnalogTuningInformation tuningInfo = svcInfo.getAnalogTuning();
+                    AtomicReference<Button> buttonRef = new AtomicReference<>();
+                    freqScale = RadioComponents.createStationFreqPanel(stationSettingPanel, tuningInfo.getMinFreq(),
+                            tuningInfo.getMaxFreq(), tuningInfo.getStep(), panel -> {
+                                Button btn = RadioComponents.createApplyStationButton(panel);
+                                buttonRef.set(btn);
+                                return btn;
+                            });
+                    applyBtn = buttonRef.get();
+                }
+                default -> {
+                    applyBtn = RadioComponents.createApplyStationButton(stationSettingPanel);
+                }
             }
-            Button applyBtn = RadioComponents.createApplyStationButton(stationSettingPanel);
-            if (stationCombo != null) {
+            if (stationCombo != null && !stationCombo.isDisposed()) {
                 applyBtn.addSelectionListener(new SelectionAdapter() {
                     @Override
                     public void widgetSelected(SelectionEvent e) {
@@ -142,7 +160,7 @@ public class LeafRadioMain {
 
     protected void createContents() {
         shell = new Shell();
-        shell.setSize(400, 275);
+        shell.setSize(425, 300);
         shell.setText("LeafRadio");
         shell.setLayout(new GridLayout(1, false));
 
