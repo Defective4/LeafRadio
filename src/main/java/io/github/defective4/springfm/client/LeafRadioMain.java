@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -54,6 +55,11 @@ public class LeafRadioMain {
     private Label titleLabel;
     protected Shell shell;
 
+    public void layout(boolean changed, boolean all) {
+        shell.layout(changed, all);
+        adjustMinSize();
+    }
+
     public void open() {
         Display display = Display.getDefault();
         createContents();
@@ -64,6 +70,13 @@ public class LeafRadioMain {
                 display.sleep();
             }
         }
+    }
+
+    private void adjustMinSize() {
+        Point current = shell.getSize();
+        shell.pack();
+        shell.setMinimumSize(shell.getSize());
+        shell.setSize(current);
     }
 
     private void connectProfile(ProfileInformation profile) {
@@ -154,7 +167,7 @@ public class LeafRadioMain {
                     }
                 });
             }
-            shell.layout(true, true);
+            layout(true, true);
         }
     }
 
@@ -299,6 +312,8 @@ public class LeafRadioMain {
         });
 
         disconnect(false);
+
+        adjustMinSize();
     }
 
     public static void main(String[] args) {
