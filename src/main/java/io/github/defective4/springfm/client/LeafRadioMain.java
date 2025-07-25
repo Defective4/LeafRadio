@@ -121,6 +121,7 @@ public class LeafRadioMain {
                     public void widgetSelected(SelectionEvent e) {
                         try {
                             client.digitalTune(player.getProfile().getName(), stationCombo.getSelectionIndex());
+                            stationCombo.setEnabled(false);
                             applyBtn.setEnabled(false);
                         } catch (IOException e1) {
                             e1.printStackTrace();
@@ -256,6 +257,7 @@ public class LeafRadioMain {
             public void digitalTune(int index) {
                 if (stationCombo != null && !stationCombo.isDisposed()) {
                     stationCombo.select(index);
+                    stationCombo.setEnabled(true);
                 }
             }
 
