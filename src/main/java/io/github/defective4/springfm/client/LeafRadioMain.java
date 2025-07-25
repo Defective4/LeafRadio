@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -16,6 +17,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -145,6 +147,27 @@ public class LeafRadioMain {
                 default -> {
                     applyBtn = RadioComponents.createApplyStationButton(stationSettingPanel);
                 }
+            }
+            if (freqScale != null && !freqScale.isDisposed()) {
+                applyBtn.addSelectionListener(new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        try {
+                            client.analogTune(player.getProfile().getName(), freqScale.getSelection());
+                            freqScale.setEnabled(false);
+                            applyBtn.setEnabled(false);
+                        } catch (Exception e2) {
+                            e2.printStackTrace();
+                            DialogUtils.showException(shell, e2);
+                        }
+                    }
+                });
+                freqScale.addSelectionListener(new SelectionAdapter() {
+                    @Override
+                    public void widgetSelected(SelectionEvent e) {
+                        applyBtn.setEnabled(true);
+                    }
+                });
             }
             if (stationCombo != null && !stationCombo.isDisposed()) {
                 applyBtn.addSelectionListener(new SelectionAdapter() {
@@ -277,6 +300,17 @@ public class LeafRadioMain {
         });
 
         player = new RadioPlayer(new PlayerEventListener() {
+
+            @Override
+            public void analogTune(int freq) {
+                if (freqScale != null && !freqScale.isDisposed()) {
+                    freqScale.setSelection(freq);
+                    freqScale.setEnabled(true);
+                    Event e = new Event();
+                    freqScale.getTypedListeners(SWT.Selection, SelectionListener.class).findFirst().get()
+                            .widgetSelected(null);
+                }
+            }
 
             @Override
             public void audioAnnotationReceived(AudioAnnotation annotation) {

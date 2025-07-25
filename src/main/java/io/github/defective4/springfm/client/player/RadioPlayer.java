@@ -94,6 +94,10 @@ public class RadioPlayer {
                                         int index = Integer.parseInt(command.getData());
                                         Display.getDefault().asyncExec(() -> listener.digitalTune(index));
                                     }
+                                    case PlayerCommand.COMMAND_ANALOG_TUNE -> {
+                                        int freq = Integer.parseInt(command.getData());
+                                        Display.getDefault().asyncExec(() -> listener.analogTune(freq));
+                                    }
 
                                     default -> {}
                                 }

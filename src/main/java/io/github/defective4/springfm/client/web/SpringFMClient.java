@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
+import io.github.defective4.springfm.client.util.IOUtils;
 import io.github.defective4.springfm.server.data.AuthResponse;
 
 public class SpringFMClient {
@@ -26,6 +27,13 @@ public class SpringFMClient {
 
     public SpringFMClient(URL baseURL) {
         this.baseURL = baseURL.toString() + "/";
+    }
+
+    public void analogTune(String profile, int frequency) throws IOException {
+        HttpURLConnection con = createPostHttpConnection("profile/" + profile + "/tune/analog",
+                Map.of("frequency", Integer.toString(frequency)));
+
+        if (con.getResponseCode() >= 400) throw new IOException(IOUtils.readTextContent(con.getErrorStream()));
     }
 
     public AuthResponse authenticate() throws IOException, JsonParseException {
@@ -51,14 +59,14 @@ public class SpringFMClient {
         HttpURLConnection con = createPostHttpConnection("profile/" + profile + "/tune/digital",
                 Map.of("index", Integer.toString(index)));
 
-        if (con.getResponseCode() >= 400) throw new IOException(con.getResponseMessage());
+        if (con.getResponseCode() >= 400) throw new IOException(IOUtils.readTextContent(con.getErrorStream()));
     }
 
     public void setService(String profile, int index) throws IOException {
         HttpURLConnection con = createPostHttpConnection("profile/" + profile + "/service",
                 Map.of("index", Integer.toString(index)));
 
-        if (con.getResponseCode() >= 400) throw new IOException(con.getResponseMessage());
+        if (con.getResponseCode() >= 400) throw new IOException(IOUtils.readTextContent(con.getErrorStream()));
     }
 
     private HttpURLConnection createGetHttpConnection(String suburl)
