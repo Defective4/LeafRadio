@@ -56,13 +56,8 @@ public class RadioPlayer {
         this.profile = profile;
         Display.getDefault().asyncExec(() -> listener.audioAnnotationReceived(new AudioAnnotation(null, null)));
 
-        Object lock = new Object();
-
         audioTask = executor.submit(() -> {
             try (InputStream audioIn = client.connectAudioChannel(profile.getName())) {
-                synchronized (lock) {
-                    lock.notify();
-                }
                 byte[] buffer = new byte[4096];
                 while (audioTask != null && !audioTask.isCancelled()) {
                     int read = audioIn.read(buffer);
@@ -74,16 +69,8 @@ public class RadioPlayer {
                 Display.getDefault().asyncExec(() -> listener.playerErrored(e));
             }
         });
-        synchronized (lock) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {}
-        }
         dataTask = executor.submit(() -> {
             try (DataInputStream in = new DataInputStream(client.connectDataChannel(profile.getName()))) {
-                synchronized (lock) {
-                    lock.notify();
-                }
                 while (dataTask != null && !dataTask.isCancelled()) {
                     Packet packet = Packet.fromStream(in);
                     JsonObject root = packet.getPayloadAsJSON();
@@ -103,6 +90,11 @@ public class RadioPlayer {
                                         int index = Integer.parseInt(command.getData());
                                         Display.getDefault().asyncExec(() -> listener.serviceChanged(index));
                                     }
+                                    case PlayerCommand.COMMAND_DIGITAL_TUNE -> {
+                                        int index = Integer.parseInt(command.getData());
+                                        Display.getDefault().asyncExec(() -> listener.digitalTune(index));
+                                    }
+
                                     default -> {}
                                 }
                             } catch (Exception e) {
@@ -118,11 +110,6 @@ public class RadioPlayer {
                 Display.getDefault().asyncExec(() -> listener.playerErrored(e));
             }
         });
-        synchronized (lock) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {}
-        }
     }
 
     public synchronized void stop() {

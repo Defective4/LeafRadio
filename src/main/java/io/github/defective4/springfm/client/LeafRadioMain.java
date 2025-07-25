@@ -43,8 +43,10 @@ public class LeafRadioMain {
     private RadioPlayer player;
     private Menu profilesMenu;
     private Combo serviceCombo;
+    private Combo stationCombo;
     private Composite stationSettingPanel;
     private Label titleLabel;
+
     protected Shell shell;
 
     public void open() {
@@ -60,22 +62,21 @@ public class LeafRadioMain {
     }
 
     private void connectProfile(ProfileInformation profile) {
-        new ProgressDialog(shell, "Connecting...").open(dial -> {
+        try {
             player.start(profile);
-            Display.getDefault().asyncExec(() -> {
-                List<ServiceInformation> services = profile.getServices();
-                String[] items = new String[services.size() + 1];
-                for (int i = 0; i < services.size(); i++) {
-                    items[i + 1] = services.get(i).getName();
-                }
-                items[0] = "(No service)";
-                serviceCombo.setItems(items);
-                serviceCombo.setEnabled(true);
-                serviceCombo.select(0);
-                updateStationControls();
-            });
-        });
-
+            List<ServiceInformation> services = profile.getServices();
+            String[] items = new String[services.size() + 1];
+            for (int i = 0; i < services.size(); i++) {
+                items[i + 1] = services.get(i).getName();
+            }
+            items[0] = "(No service)";
+            serviceCombo.setItems(items);
+            serviceCombo.setEnabled(true);
+            serviceCombo.select(0);
+            updateStationControls();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void disconnect(boolean profileOnly) {
@@ -107,7 +108,8 @@ public class LeafRadioMain {
             switch (svcInfo.getTuningType()) {
                 case ServiceInformation.TUNING_TYPE_DIGITAL -> {
                     DigitalTuningInformation tuningInfo = svcInfo.getDigitalTuning();
-                    RadioComponents.createStationComboPanel(stationSettingPanel, tuningInfo.getStations());
+                    stationCombo = RadioComponents.createStationComboPanel(stationSettingPanel,
+                            tuningInfo.getStations());
                 }
                 default -> {}
             }
@@ -230,6 +232,13 @@ public class LeafRadioMain {
             }
 
             @Override
+            public void digitalTune(int index) {
+                if (stationCombo != null && !stationCombo.isDisposed()) {
+                    stationCombo.select(index);
+                }
+            }
+
+            @Override
             public void playerErrored(Exception ex) {
                 DialogUtils.showException(shell, ex);
                 new SelectionAdapter() {
@@ -246,7 +255,6 @@ public class LeafRadioMain {
                 serviceCombo.setEnabled(true);
                 updateStationControls();
             }
-
         });
 
         disconnect(false);
