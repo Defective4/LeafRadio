@@ -32,11 +32,11 @@ public class RadioPlayer {
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final Gson gson = new Gson();
     private final Timer labelTimer = new Timer(true);
-    private long lastAudioSample = 0;
     private final PlayerEventListener listener;
     private ProfileInformation profile;
-
     private SourceDataLine sdl;
+
+    private long totalSamples = 0;
 
     public RadioPlayer(PlayerEventListener listener) {
         this.listener = listener;
@@ -75,8 +75,8 @@ public class RadioPlayer {
                 byte[] buffer = new byte[4096];
                 while (audioTask != null && !audioTask.isCancelled()) {
                     int read = audioIn.read(buffer);
+                    totalSamples += read;
                     sdl.write(buffer, 0, read);
-                    lastAudioSample = System.currentTimeMillis();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -147,8 +147,11 @@ public class RadioPlayer {
     private void updateConnectedLabel() {
         if (audioTask == null || audioTask.isCancelled()) return;
         Display.getDefault().asyncExec(() -> {
-            boolean hasAudio = System.currentTimeMillis() - lastAudioSample < 1000;
-            LeafRadioMain.INSTANCE.setConnetedLabelText("Connected" + (hasAudio ? "" : ", no audio"));
+            long totalSamples = this.totalSamples;
+            this.totalSamples = 0;
+            int rate = (int) (totalSamples / 10d);
+            LeafRadioMain.INSTANCE.setConnetedLabelText(
+                    "Connected" + (rate > 0 ? String.format(", %s KB/s", rate / 100d) : ", no audio"));
         });
     }
 
