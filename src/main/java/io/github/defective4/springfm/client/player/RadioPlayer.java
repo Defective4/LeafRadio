@@ -2,6 +2,8 @@ package io.github.defective4.springfm.client.player;
 
 import java.io.DataInputStream;
 import java.io.InputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,6 +19,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import io.github.defective4.springfm.client.LeafRadioMain;
 import io.github.defective4.springfm.client.web.SpringFMClient;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.PlayerCommand;
@@ -28,12 +31,22 @@ public class RadioPlayer {
     private SpringFMClient client;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final Gson gson = new Gson();
+    private final Timer labelTimer = new Timer(true);
+    private long lastAudioSample = 0;
     private final PlayerEventListener listener;
     private ProfileInformation profile;
+
     private SourceDataLine sdl;
 
     public RadioPlayer(PlayerEventListener listener) {
         this.listener = listener;
+        labelTimer.scheduleAtFixedRate(new TimerTask() {
+
+            @Override
+            public void run() {
+                updateConnectedLabel();
+            }
+        }, 1000, 1000);
     }
 
     public SpringFMClient getClient() {
@@ -58,10 +71,12 @@ public class RadioPlayer {
 
         audioTask = executor.submit(() -> {
             try (InputStream audioIn = client.connectAudioChannel(profile.getName())) {
+                updateConnectedLabel();
                 byte[] buffer = new byte[4096];
                 while (audioTask != null && !audioTask.isCancelled()) {
                     int read = audioIn.read(buffer);
                     sdl.write(buffer, 0, read);
+                    lastAudioSample = System.currentTimeMillis();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -127,6 +142,14 @@ public class RadioPlayer {
             sdl = null;
             profile = null;
         }
+    }
+
+    private void updateConnectedLabel() {
+        if (audioTask == null || audioTask.isCancelled()) return;
+        Display.getDefault().asyncExec(() -> {
+            boolean hasAudio = System.currentTimeMillis() - lastAudioSample < 1000;
+            LeafRadioMain.INSTANCE.setConnetedLabelText("Connected" + (hasAudio ? "" : ", no audio"));
+        });
     }
 
 }

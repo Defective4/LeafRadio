@@ -12,6 +12,7 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
@@ -42,9 +43,12 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioMain {
 
-    private SpringFMClient client;
-    private MenuItem connectItem;
+    public static final LeafRadioMain INSTANCE = new LeafRadioMain();
 
+    private SpringFMClient client;
+    private Label connectedLabel;
+
+    private MenuItem connectItem;
     private Label descriptionLabel;
     private MenuItem disconnectItem;
     private Scale freqScale;
@@ -52,8 +56,8 @@ public class LeafRadioMain {
     private Menu profilesMenu;
     private Combo serviceCombo;
     private Combo stationCombo;
-    private Composite stationSettingPanel;
 
+    private Composite stationSettingPanel;
     private Label titleLabel;
     protected Shell shell;
 
@@ -72,6 +76,12 @@ public class LeafRadioMain {
                 display.sleep();
             }
         }
+    }
+
+    public void setConnetedLabelText(String text) {
+        connectedLabel.setText(text);
+        connectedLabel.getParent().layout(true, true);
+        connectedLabel.getParent().getParent().layout(true, true);
     }
 
     private void adjustMinSize() {
@@ -108,6 +118,7 @@ public class LeafRadioMain {
             RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
             disconnectItem.setEnabled(false);
             connectItem.setEnabled(true);
+            setConnetedLabelText("Not connected");
         }
 
         descriptionLabel.setText("Select a profile to start listening");
@@ -261,6 +272,19 @@ public class LeafRadioMain {
 
         RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
 
+        Label spacerLabel = new Label(shell, SWT.NONE);
+        spacerLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+
+        Label label = new Label(shell, SWT.SEPARATOR | SWT.HORIZONTAL);
+        label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+
+        Composite composite = new Composite(shell, SWT.NONE);
+        composite.setLayout(new RowLayout(SWT.HORIZONTAL));
+        composite.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+
+        connectedLabel = new Label(composite, SWT.NONE);
+        connectedLabel.setBounds(0, 0, 62, 19);
+
         disconnectItem.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -278,13 +302,15 @@ public class LeafRadioMain {
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
                             RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
-                                if (profile == null)
+                                if (profile == null) {
                                     disconnect(true);
-                                else
+                                    setConnetedLabelText("Authenticated");
+                                } else
                                     connectProfile(profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
+                            setConnetedLabelText("Authenticated");
                             MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
                             box.setText("Success");
                             box.setMessage("Connected to \"" + response.getInstanceName()
@@ -352,8 +378,7 @@ public class LeafRadioMain {
 
     public static void main(String[] args) {
         try {
-            LeafRadioMain window = new LeafRadioMain();
-            window.open();
+            INSTANCE.open();
         } catch (Exception e) {
             e.printStackTrace();
         }
