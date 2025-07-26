@@ -150,7 +150,7 @@ public class RadioPlayer {
             long totalSamples = this.totalSamples;
             this.totalSamples = 0;
             int rate = (int) (totalSamples / 10d);
-            LeafRadioMain.INSTANCE.setConnetedLabelText(
+            LeafRadioMain.INSTANCE.setConnectedLabel(
                     "Connected" + (rate > 0 ? String.format(", %s KB/s", rate / 100d) : ", no audio"));
         });
     }

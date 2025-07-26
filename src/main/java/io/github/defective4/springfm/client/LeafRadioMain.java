@@ -39,15 +39,17 @@ import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
 import io.github.defective4.springfm.server.data.ProfileInformation;
+import io.github.defective4.springfm.server.data.SerializableAudioFormat;
 import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioMain {
 
     public static final LeafRadioMain INSTANCE = new LeafRadioMain();
 
+    private Label audioFormatLabel;
     private SpringFMClient client;
-    private Label connectedLabel;
 
+    private Label connectedLabel;
     private MenuItem connectItem;
     private Label descriptionLabel;
     private MenuItem disconnectItem;
@@ -55,8 +57,8 @@ public class LeafRadioMain {
     private RadioPlayer player;
     private Menu profilesMenu;
     private Combo serviceCombo;
-    private Combo stationCombo;
 
+    private Combo stationCombo;
     private Composite stationSettingPanel;
     private Label titleLabel;
     protected Shell shell;
@@ -78,9 +80,13 @@ public class LeafRadioMain {
         }
     }
 
-    public void setConnetedLabelText(String text) {
+    public void setAudioFormatLabel(String fmt) {
+        audioFormatLabel.setText(fmt);
+        audioFormatLabel.getParent().getParent().layout(true, true);
+    }
+
+    public void setConnectedLabel(String text) {
         connectedLabel.setText(text);
-        connectedLabel.getParent().layout(true, true);
         connectedLabel.getParent().getParent().layout(true, true);
     }
 
@@ -103,6 +109,14 @@ public class LeafRadioMain {
             serviceCombo.setItems(items);
             serviceCombo.setEnabled(true);
             serviceCombo.select(0);
+            SerializableAudioFormat fmt = profile.getAudioFormat();
+            int sampleRate = (int) (fmt.getSampleRate() / 100f);
+            String chan = switch (fmt.getChannels()) {
+                case 1 -> "mono";
+                case 2 -> "stereo";
+                default -> fmt.getChannels() + "-channel";
+            };
+            setAudioFormatLabel(sampleRate / 10d + " KHz, " + chan);
             updateStationControls();
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,8 +132,10 @@ public class LeafRadioMain {
             RadioComponents.createProfileItems(profilesMenu, null, prof -> {});
             disconnectItem.setEnabled(false);
             connectItem.setEnabled(true);
-            setConnetedLabelText("Not connected");
+            setConnectedLabel("Not connected");
         }
+
+        setAudioFormatLabel("No audio");
 
         descriptionLabel.setText("Select a profile to start listening");
         titleLabel.setText("Not connected");
@@ -278,12 +294,15 @@ public class LeafRadioMain {
         Label label = new Label(shell, SWT.SEPARATOR | SWT.HORIZONTAL);
         label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 
-        Composite composite = new Composite(shell, SWT.NONE);
-        composite.setLayout(new RowLayout(SWT.HORIZONTAL));
-        composite.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        Composite statusBar = new Composite(shell, SWT.NONE);
+        statusBar.setLayout(new RowLayout(SWT.HORIZONTAL));
 
-        connectedLabel = new Label(composite, SWT.NONE);
-        connectedLabel.setBounds(0, 0, 62, 19);
+        audioFormatLabel = new Label(statusBar, SWT.NONE);
+
+        Label statusSeparator1 = new Label(statusBar, SWT.NONE);
+        statusSeparator1.setText(" | ");
+
+        connectedLabel = new Label(statusBar, SWT.NONE);
 
         disconnectItem.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -304,13 +323,13 @@ public class LeafRadioMain {
                             RadioComponents.createProfileItems(profilesMenu, response.getProfiles(), profile -> {
                                 if (profile == null) {
                                     disconnect(true);
-                                    setConnetedLabelText("Authenticated");
+                                    setConnectedLabel("Authenticated");
                                 } else
                                     connectProfile(profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
-                            setConnetedLabelText("Authenticated");
+                            setConnectedLabel("Authenticated");
                             MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
                             box.setText("Success");
                             box.setMessage("Connected to \"" + response.getInstanceName()
