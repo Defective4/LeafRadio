@@ -8,7 +8,7 @@ import org.eclipse.swt.widgets.Shell;
 public class DialogUtils {
 
     public static void showDialog(Shell parent, String title, String text) {
-        MessageBox box = new MessageBox(parent, SWT.NONE);
+        MessageBox box = new MessageBox(parent, SWT.OK);
         box.setText(text);
         box.setMessage(text);
         box.open();

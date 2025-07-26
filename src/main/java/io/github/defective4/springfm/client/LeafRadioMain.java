@@ -22,7 +22,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Shell;
 
@@ -332,11 +331,8 @@ public class LeafRadioMain {
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
                             setConnectedLabel("Authenticated");
-                            MessageBox box = new MessageBox(shell, SWT.OK);
-                            box.setText("Success");
-                            box.setMessage("Connected to \"" + response.getInstanceName()
+                            DialogUtils.showDialog(shell, "Success", "Connected to \"" + response.getInstanceName()
                                     + "\"!\nChoose a profile from the Server menu.");
-                            box.open();
                         });
                         LeafRadioMain.this.client = client;
                         player.setClient(client);
