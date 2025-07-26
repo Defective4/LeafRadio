@@ -316,7 +316,7 @@ public class LeafRadioMain {
             public void widgetSelected(SelectionEvent e) {
                 URL url = new ServerConnectDialog(shell).open();
                 if (url != null) {
-                    new ProgressDialog(shell, "Connecting...").open(shell -> {
+                    new ProgressDialog(shell, "Connecting...").open(progShell -> {
                         SpringFMClient client = new SpringFMClient(url);
                         AuthResponse response = client.authenticate();
                         Display.getDefault().asyncExec(() -> {
@@ -324,13 +324,15 @@ public class LeafRadioMain {
                                 if (profile == null) {
                                     disconnect(true);
                                     setConnectedLabel("Authenticated");
+                                } else if (profile == player.getProfile()) {
+                                    DialogUtils.showDialog(shell, "Error", "This profile is already selected");
                                 } else
                                     connectProfile(profile);
                             });
                             disconnectItem.setEnabled(true);
                             connectItem.setEnabled(false);
                             setConnectedLabel("Authenticated");
-                            MessageBox box = new MessageBox(LeafRadioMain.this.shell, SWT.OK);
+                            MessageBox box = new MessageBox(shell, SWT.OK);
                             box.setText("Success");
                             box.setMessage("Connected to \"" + response.getInstanceName()
                                     + "\"!\nChoose a profile from the Server menu.");
