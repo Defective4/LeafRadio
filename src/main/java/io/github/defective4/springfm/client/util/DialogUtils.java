@@ -9,7 +9,7 @@ public class DialogUtils {
 
     public static void showDialog(Shell parent, String title, String text) {
         MessageBox box = new MessageBox(parent, SWT.OK);
-        box.setText(text);
+        box.setText(title);
         box.setMessage(text);
         box.open();
     }
