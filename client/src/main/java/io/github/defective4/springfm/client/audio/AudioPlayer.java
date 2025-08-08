@@ -30,6 +30,7 @@ public class AudioPlayer {
     private final SpringFMClient client;
     private Future<?> dataTask;
     private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
+    private boolean muted;
 
     public AudioPlayer(SpringFMClient client) {
         this.client = Objects.requireNonNull(client);
@@ -48,11 +49,21 @@ public class AudioPlayer {
                 && audioSink != null && !audioTask.isCancelled() && !dataTask.isCancelled() && audioSink.isActive();
     }
 
+    public boolean isMuted() {
+        return muted;
+    }
+
     public boolean removeListener(AudioPlayerEventListener listener) {
         return listeners.remove(listener);
     }
 
+    public void setMuted(boolean muted) {
+        this.muted = muted;
+    }
+
     public void start(String profile) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+        if (isAlive()) stop();
+        setMuted(false);
         AudioInputStream audioStream = client.openAudioStream(profile);
         reopenAudioSink(audioStream.getFormat());
         audioInputStream = new DataInputStream(audioStream);
@@ -66,9 +77,7 @@ public class AudioPlayer {
                         AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
                         reopenAudioSink(newFormat);
                         listeners.forEach(ls -> ls.audioFormatChanged(newFormat));
-                    } else {
-                        audioSink.write(buffer, 0, buffer.length);
-                    }
+                    } else if (!isMuted()) audioSink.write(buffer, 0, buffer.length);
                 }
             } catch (Exception e) {
                 try {

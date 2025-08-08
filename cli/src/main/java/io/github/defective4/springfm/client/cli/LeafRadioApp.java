@@ -24,6 +24,7 @@ public class LeafRadioApp {
     private AudioAnnotation lastAnnotation;
 
     private float lastFreq = -1;
+    private boolean muteNonMusic;
     private final AudioPlayer player;
     private ProfileInformation prof;
     private DiscordRPC rpc;
@@ -48,11 +49,13 @@ public class LeafRadioApp {
 
             @Override
             public void annotationReceived(AudioAnnotation annotation) {
+                if (muteNonMusic) player.setMuted(annotation.isNonMusic());
                 if (annotation.equals(lastAnnotation) && System.currentTimeMillis() - lastAnnotationTime < 5000) return;
                 lastAnnotationTime = System.currentTimeMillis();
                 updateRPC();
-                if (!annotation.equals(lastAnnotation)) System.err.println("Server sent an audio annotation: "
-                        + annotation.getTitle() + " | " + annotation.getDescription());
+                if (!annotation.equals(lastAnnotation))
+                    System.err.println("Server sent an audio annotation: " + annotation.getTitle() + " | "
+                            + annotation.getDescription() + " | Music: " + !annotation.isNonMusic());
                 lastAnnotation = annotation;
             }
 
@@ -86,8 +89,9 @@ public class LeafRadioApp {
         });
     }
 
-    public void playService(String profile, int service, boolean force, int frequency, float gain)
+    public void playService(String profile, int service, boolean force, int frequency, float gain, boolean muteNonMusic)
             throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+        this.muteNonMusic = muteNonMusic;
         System.err.println("Authenticating with " + client.getBaseURL() + "...");
         AuthResponse auth = client.auth();
         if (!force) {

@@ -25,12 +25,15 @@ public class CLIMain {
                     .hasArg().argName("service id").build())
             .addOption(Option.builder("f").desc("Force unsupported arguments").longOpt("force").build())
             .addOption(Option.builder("d").desc("Disabled Discord Rich Presence").longOpt("disable-rpc").build())
-            .addOption(Option.builder().desc(
+            .addOption(Option.builder("F").desc(
                     "Tune to a frequency in Hz. Only available for services that support analog tuning. Requires --service option")
                     .longOpt("freq").argName("Hz").hasArg().converter(Integer::parseInt).build())
-            .addOption(Option.builder().desc(
+            .addOption(Option.builder("G").desc(
                     "Set service gain. Can only be used with services supporting gain adjusting. Requires --service option")
-                    .longOpt("gain").argName("db").hasArg().converter(Float::parseFloat).build());
+                    .longOpt("gain").argName("db").hasArg().converter(Float::parseFloat).build())
+            .addOption(Option.builder("m").desc(
+                    "Mute non-music segments. If this option is present, the audio will be muted every time server tells the client that current audio doesn't contain music (for example during commercials)")
+                    .build());
 
     public static void main(String[] args) {
         try {
@@ -68,24 +71,24 @@ public class CLIMain {
                 int serviceId = cli.hasOption('s') ? cli.getParsedOptionValue('s') : -2;
                 String profile = cli.getOptionValue('p');
                 int freq = -1;
-                if (cli.hasOption("freq")) {
+                if (cli.hasOption('F')) {
                     if (!cli.hasOption('s')) {
                         printHelp("--freq requires --service");
                         System.exit(2);
                         return;
                     }
-                    freq = cli.getParsedOptionValue("freq");
+                    freq = cli.getParsedOptionValue('F');
                 }
                 float gain = -1;
-                if (cli.hasOption("gain")) {
+                if (cli.hasOption('G')) {
                     if (!cli.hasOption('s')) {
                         printHelp("--gain requires --service");
                         System.exit(2);
                         return;
                     }
-                    gain = cli.getParsedOptionValue("gain");
+                    gain = cli.getParsedOptionValue('G');
                 }
-                app.playService(profile, serviceId, cli.hasOption('f'), freq, gain);
+                app.playService(profile, serviceId, cli.hasOption('f'), freq, gain, cli.hasOption('m'));
             } else {
                 printHelp("Either --probe or --play is required");
                 System.exit(2);
