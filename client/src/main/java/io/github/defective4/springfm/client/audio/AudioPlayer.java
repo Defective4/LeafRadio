@@ -28,6 +28,7 @@ public class AudioPlayer {
     private SourceDataLine audioSink;
     private Future<?> audioTask;
     private final SpringFMClient client;
+    private Future<?> dataTask;
     private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
 
     public AudioPlayer(SpringFMClient client) {
@@ -42,6 +43,11 @@ public class AudioPlayer {
         return Collections.unmodifiableList(listeners);
     }
 
+    public boolean isAlive() {
+        return audioTask != null && dataTask != null && audioInputStream != null && controlInputStream != null
+                && audioSink != null && !audioTask.isCancelled() && !dataTask.isCancelled() && audioSink.isActive();
+    }
+
     public boolean removeListener(AudioPlayerEventListener listener) {
         return listeners.remove(listener);
     }
@@ -54,7 +60,7 @@ public class AudioPlayer {
         audioTask = ThreadUtils.submit(() -> {
             try {
                 byte[] buffer = new byte[4096];
-                while (true) { // TODO isAlive
+                while (isAlive()) {
                     audioInputStream.readFully(buffer);
                     if (SerializableAudioFormat.Codec.isSwitchFrame(buffer)) {
                         AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
@@ -66,12 +72,16 @@ public class AudioPlayer {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                // TODO stop();
+                try {
+                    stop();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
         });
-        ThreadUtils.submit(() -> {
+        dataTask = ThreadUtils.submit(() -> {
             try {
-                while (true) { // TODO isAlive
+                while (isAlive()) {
                     Packet packet = Packet.fromStream(controlInputStream);
                     PacketPayload payload = packet.getPayload();
                     switch (payload.getKey().toLowerCase()) {
@@ -106,9 +116,21 @@ public class AudioPlayer {
                 }
             } catch (Exception e2) {
                 e2.printStackTrace();
-                // TODO stop();
+                try {
+                    stop();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
+    }
+
+    public void stop() throws IOException {
+        if (audioSink != null) audioSink.close();
+        if (audioTask != null) audioTask.cancel(true);
+        if (dataTask != null) dataTask.cancel(true);
+        if (audioInputStream != null) audioInputStream.close();
+        if (controlInputStream != null) controlInputStream.close();
     }
 
     private void reopenAudioSink(AudioFormat fmt) throws LineUnavailableException {
