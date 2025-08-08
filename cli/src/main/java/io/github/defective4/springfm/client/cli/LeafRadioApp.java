@@ -44,9 +44,12 @@ public class LeafRadioApp {
                 System.err.println("Server changed frequency to " + RadioUtils.createFrequencyString(frequency));
             }
 
+            private long lastAnnotationTime = 0;
+
             @Override
             public void annotationReceived(AudioAnnotation annotation) {
-                if (annotation.equals(lastAnnotation)) return;
+                if (annotation.equals(lastAnnotation) && System.currentTimeMillis() - lastAnnotationTime < 5000) return;
+                lastAnnotationTime = System.currentTimeMillis();
                 lastAnnotation = annotation;
                 updateRPC();
                 System.err.println("Server sent an audio annotation: " + annotation.getTitle() + " | "
