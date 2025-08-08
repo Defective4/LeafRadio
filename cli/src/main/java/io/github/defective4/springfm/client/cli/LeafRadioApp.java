@@ -34,6 +34,8 @@ public class LeafRadioApp {
         this.enableDiscordPresence = enableDiscordPresence;
         player = new AudioPlayer(client);
         player.addListener(new AudioPlayerEventAdapter() {
+            private long lastAnnotationTime = 0;
+
             @Override
             public void analogTuned(float frequency) {
                 if (serviceInfo != null && serviceInfo.getAnalogTuning() != null)
@@ -44,16 +46,14 @@ public class LeafRadioApp {
                 System.err.println("Server changed frequency to " + RadioUtils.createFrequencyString(frequency));
             }
 
-            private long lastAnnotationTime = 0;
-
             @Override
             public void annotationReceived(AudioAnnotation annotation) {
                 if (annotation.equals(lastAnnotation) && System.currentTimeMillis() - lastAnnotationTime < 5000) return;
                 lastAnnotationTime = System.currentTimeMillis();
-                lastAnnotation = annotation;
                 updateRPC();
-                System.err.println("Server sent an audio annotation: " + annotation.getTitle() + " | "
-                        + annotation.getDescription());
+                if (!annotation.equals(lastAnnotation)) System.err.println("Server sent an audio annotation: "
+                        + annotation.getTitle() + " | " + annotation.getDescription());
+                lastAnnotation = annotation;
             }
 
             @Override
@@ -192,7 +192,7 @@ public class LeafRadioApp {
         }
     }
 
-    private void updateRPC() {
+    private synchronized void updateRPC() {
         if (!enableDiscordPresence) return;
         if (rpc == null) {
             rpc = new DiscordRPC();

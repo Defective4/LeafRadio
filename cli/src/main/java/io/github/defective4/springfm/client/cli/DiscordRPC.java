@@ -51,7 +51,7 @@ public class DiscordRPC {
         return activityManager != null && act != null;
     }
 
-    public void setActivity(String state, String details) {
+    public synchronized void setActivity(String state, String details) {
         if (!isAvailable()) return;
         act.setState(state);
         act.setDetails(details);
