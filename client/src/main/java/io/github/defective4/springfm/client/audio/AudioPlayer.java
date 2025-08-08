@@ -60,7 +60,7 @@ public class AudioPlayer {
         audioTask = ThreadUtils.submit(() -> {
             try {
                 byte[] buffer = new byte[4096];
-                while (isAlive()) {
+                while (true) {
                     audioInputStream.readFully(buffer);
                     if (SerializableAudioFormat.Codec.isSwitchFrame(buffer)) {
                         AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
@@ -71,18 +71,15 @@ public class AudioPlayer {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 try {
                     stop();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
+                } catch (IOException e1) {}
                 listeners.forEach(ls -> ls.playerErrored(e));
             }
         });
         dataTask = ThreadUtils.submit(() -> {
             try {
-                while (isAlive()) {
+                while (true) {
                     Packet packet = Packet.fromStream(controlInputStream);
                     PacketPayload payload = packet.getPayload();
                     switch (payload.getKey().toLowerCase()) {
@@ -116,12 +113,9 @@ public class AudioPlayer {
                     }
                 }
             } catch (Exception e2) {
-                e2.printStackTrace();
                 try {
                     stop();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                } catch (IOException e) {}
                 listeners.forEach(ls -> ls.playerErrored(e2));
             }
         });

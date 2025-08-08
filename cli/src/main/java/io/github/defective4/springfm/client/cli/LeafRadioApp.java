@@ -46,6 +46,16 @@ public class LeafRadioApp {
             }
 
             @Override
+            public void playerErrored(Exception ex) {
+                ex.printStackTrace();
+            }
+
+            @Override
+            public void playerStopped() {
+                System.exit(1);
+            }
+
+            @Override
             public void serviceChanged(int serviceIndex) {
                 lastAnnotation = null;
                 lastFreq = -1;
