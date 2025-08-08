@@ -8,7 +8,10 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import io.github.defective4.springfm.client.SpringFMClient;
 import io.github.defective4.springfm.client.audio.AudioPlayer;
+import io.github.defective4.springfm.client.audio.AudioPlayerEventAdapter;
+import io.github.defective4.springfm.client.utils.RadioUtils;
 import io.github.defective4.springfm.server.data.AnalogTuningInformation;
+import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
 import io.github.defective4.springfm.server.data.GainInformation;
@@ -18,10 +21,48 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 public class LeafRadioApp {
     private final SpringFMClient client;
     private final AudioPlayer player;
+    private final DiscordRPC rpc;
+
+    private AudioAnnotation lastAnnotation;
+    private float lastFreq = -1;
 
     public LeafRadioApp(SpringFMClient client) {
         this.client = client;
         player = new AudioPlayer(client);
+        player.addListener(new AudioPlayerEventAdapter() {
+            @Override
+            public void analogTuned(float frequency) {
+                frequency *= 1e5f;
+                if (frequency == lastFreq) return;
+                lastFreq = frequency;
+                updateRPC();
+            }
+
+            @Override
+            public void serviceChanged(int serviceIndex) {
+                lastAnnotation = null;
+                lastFreq = -1;
+                updateRPC();
+            }
+
+            @Override
+            public void annotationReceived(AudioAnnotation annotation) {
+                if (annotation.equals(lastAnnotation)) return;
+                lastAnnotation = annotation;
+                updateRPC();
+            }
+        });
+        rpc = new DiscordRPC();
+    }
+
+    private void updateRPC() {
+        if (lastAnnotation != null) {
+            rpc.setActivity(lastAnnotation.getDescription(), lastAnnotation.getTitle());
+        } else if (lastFreq >= 0) {
+            rpc.setActivity("Listening to " + RadioUtils.createFrequencyString(lastFreq), null);
+        } else {
+            rpc.setActivity("Listening", null);
+        }
     }
 
     public void playService(String profile, int service, boolean force)
@@ -42,6 +83,7 @@ public class LeafRadioApp {
         }
         System.err.println("Starting player...");
         player.start(profile);
+        updateRPC();
         synchronized (LeafRadioApp.class) {
             try {
                 LeafRadioApp.class.wait();

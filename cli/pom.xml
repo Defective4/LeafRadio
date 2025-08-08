@@ -7,8 +7,19 @@
         <artifactId>LeafRadio</artifactId>
         <version>0.1</version>
     </parent>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
     <artifactId>cli</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>com.github.JnCrMx</groupId>
+            <artifactId>discord-game-sdk4j</artifactId>
+            <version>v1.0.0</version>
+        </dependency>
         <dependency>
             <groupId>io.github.defective4.radio</groupId>
             <artifactId>client</artifactId>

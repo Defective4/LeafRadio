@@ -7,6 +7,9 @@ import java.util.concurrent.Future;
 public class ThreadUtils {
     private static final ExecutorService SERVICE;
 
+    private ThreadUtils() {
+    }
+
     static {
         SERVICE = Executors.newVirtualThreadPerTaskExecutor();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> SERVICE.shutdownNow()));
