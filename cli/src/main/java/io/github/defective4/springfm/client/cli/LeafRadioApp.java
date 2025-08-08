@@ -3,7 +3,11 @@ package io.github.defective4.springfm.client.cli;
 import java.io.IOException;
 import java.util.List;
 
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import io.github.defective4.springfm.client.SpringFMClient;
+import io.github.defective4.springfm.client.audio.AudioPlayer;
 import io.github.defective4.springfm.server.data.AnalogTuningInformation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
@@ -13,9 +17,36 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioApp {
     private final SpringFMClient client;
+    private final AudioPlayer player;
 
     public LeafRadioApp(SpringFMClient client) {
         this.client = client;
+        player = new AudioPlayer(client);
+    }
+
+    public void playService(String profile, int service, boolean force)
+            throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+        System.err.println("Authenticating with " + client.getBaseURL() + "...");
+        AuthResponse auth = client.auth();
+        if (!force) {
+            boolean found = auth.getProfiles().stream().anyMatch(p -> p.getName().equals(profile));
+            if (!found) {
+                System.err.println("Profile \"" + profile
+                        + "\" was not found in data returned by server. Use --force to bypass this check");
+                return;
+            }
+        }
+        if (service >= -1) {
+            System.err.println("Setting service to " + service + "...");
+            client.setService(profile, service);
+        }
+        System.err.println("Starting player...");
+        player.start(profile);
+        synchronized (LeafRadioApp.class) {
+            try {
+                LeafRadioApp.class.wait();
+            } catch (InterruptedException e) {}
+        }
     }
 
     public void probeServices() throws IOException {

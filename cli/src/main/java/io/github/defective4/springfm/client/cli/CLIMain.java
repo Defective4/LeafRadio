@@ -17,8 +17,13 @@ public class CLIMain {
 
     private static final Options options = new Options()
             .addOption(Option.builder("h").desc("Print this help").longOpt("help").build())
-            .addOption(Option.builder("p").desc("Probe profiles and services and exit").longOpt("probe").build())
-            .addOption(Option.builder("s").desc("Play service").longOpt("play").build());
+            .addOption(Option.builder().desc("Probe profiles and services and exit").longOpt("probe").build())
+            .addOption(Option.builder().desc("Play service").longOpt("play").build())
+            .addOption(
+                    Option.builder("p").desc("Profile to use").longOpt("profile").argName("profile").hasArg().build())
+            .addOption(Option.builder("s").desc("Service ID to play").converter(Integer::parseInt).longOpt("service")
+                    .hasArg().argName("service id").build())
+            .addOption(Option.builder("f").desc("Force unsupported arguments").longOpt("force").build());
 
     public static void main(String[] args) {
         try {
@@ -45,10 +50,17 @@ public class CLIMain {
 
             LeafRadioApp app = new LeafRadioApp(new SpringFMClient(baseUrl));
 
-            if (cli.hasOption('p')) {
+            if (cli.hasOption("--probe")) {
                 app.probeServices();
-            } else if (cli.hasOption('s')) {
-
+            } else if (cli.hasOption("--play")) {
+                if (!cli.hasOption('p')) {
+                    printHelp("--play requires --profile");
+                    System.exit(2);
+                    return;
+                }
+                int serviceId = cli.hasOption('s') ? cli.getParsedOptionValue('s') : -2;
+                String profile = cli.getOptionValue('p');
+                app.playService(profile, serviceId, cli.hasOption('f'));
             } else {
                 printHelp("Either --probe or --play is required");
                 System.exit(2);
