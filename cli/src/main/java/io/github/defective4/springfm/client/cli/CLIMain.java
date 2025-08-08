@@ -23,7 +23,8 @@ public class CLIMain {
                     Option.builder("p").desc("Profile to use").longOpt("profile").argName("profile").hasArg().build())
             .addOption(Option.builder("s").desc("Service ID to play").converter(Integer::parseInt).longOpt("service")
                     .hasArg().argName("service id").build())
-            .addOption(Option.builder("f").desc("Force unsupported arguments").longOpt("force").build());
+            .addOption(Option.builder("f").desc("Force unsupported arguments").longOpt("force").build())
+            .addOption(Option.builder("d").desc("Disabled Discord Rich Presence").longOpt("disable-rpc").build());
 
     public static void main(String[] args) {
         try {
@@ -48,7 +49,7 @@ public class CLIMain {
                 return;
             }
 
-            LeafRadioApp app = new LeafRadioApp(new SpringFMClient(baseUrl));
+            LeafRadioApp app = new LeafRadioApp(new SpringFMClient(baseUrl), !cli.hasOption('d'));
 
             if (cli.hasOption("--probe")) {
                 app.probeServices();

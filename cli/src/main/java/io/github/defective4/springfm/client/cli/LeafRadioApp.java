@@ -20,13 +20,13 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioApp {
     private final SpringFMClient client;
-    private final AudioPlayer player;
-    private final DiscordRPC rpc;
-
     private AudioAnnotation lastAnnotation;
     private float lastFreq = -1;
 
-    public LeafRadioApp(SpringFMClient client) {
+    private final AudioPlayer player;
+    private final DiscordRPC rpc;
+
+    public LeafRadioApp(SpringFMClient client, boolean enableDiscordPresence) {
         this.client = client;
         player = new AudioPlayer(client);
         player.addListener(new AudioPlayerEventAdapter() {
@@ -39,30 +39,20 @@ public class LeafRadioApp {
             }
 
             @Override
-            public void serviceChanged(int serviceIndex) {
-                lastAnnotation = null;
-                lastFreq = -1;
-                updateRPC();
-            }
-
-            @Override
             public void annotationReceived(AudioAnnotation annotation) {
                 if (annotation.equals(lastAnnotation)) return;
                 lastAnnotation = annotation;
                 updateRPC();
             }
-        });
-        rpc = new DiscordRPC();
-    }
 
-    private void updateRPC() {
-        if (lastAnnotation != null) {
-            rpc.setActivity(lastAnnotation.getDescription(), lastAnnotation.getTitle());
-        } else if (lastFreq >= 0) {
-            rpc.setActivity("Listening to " + RadioUtils.createFrequencyString(lastFreq), null);
-        } else {
-            rpc.setActivity("Listening", null);
-        }
+            @Override
+            public void serviceChanged(int serviceIndex) {
+                lastAnnotation = null;
+                lastFreq = -1;
+                updateRPC();
+            }
+        });
+        rpc = enableDiscordPresence ? new DiscordRPC() : null;
     }
 
     public void playService(String profile, int service, boolean force)
@@ -133,6 +123,17 @@ public class LeafRadioApp {
                 }
             }
             System.out.println();
+        }
+    }
+
+    private void updateRPC() {
+        if (rpc == null) return;
+        if (lastAnnotation != null) {
+            rpc.setActivity(lastAnnotation.getDescription(), lastAnnotation.getTitle());
+        } else if (lastFreq >= 0) {
+            rpc.setActivity("Listening to " + RadioUtils.createFrequencyString(lastFreq), null);
+        } else {
+            rpc.setActivity("Listening", null);
         }
     }
 }
