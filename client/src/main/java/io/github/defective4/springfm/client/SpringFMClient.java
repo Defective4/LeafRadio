@@ -37,6 +37,10 @@ public class SpringFMClient {
         this.baseURL = base;
     }
 
+    public void analogTune(String profile, int freq) throws IOException {
+        prepareConnection("profile/" + profile + "/tune/analog", Map.of("frequency", freq));
+    }
+
     public AuthResponse auth() throws IOException {
         HttpURLConnection connection = prepareConnection("auth");
         try (Reader reader = new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)) {
@@ -64,7 +68,7 @@ public class SpringFMClient {
         return new DataInputStream(prepareConnection("profile/" + profile + "/data").getInputStream());
     }
 
-    public void setService(String profile, int index) throws MalformedURLException, IOException {
+    public void setService(String profile, int index) throws IOException {
         prepareConnection("profile/" + profile + "/service", Map.of("index", index));
     }
 

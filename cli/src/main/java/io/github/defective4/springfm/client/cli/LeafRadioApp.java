@@ -66,7 +66,7 @@ public class LeafRadioApp {
         });
     }
 
-    public void playService(String profile, int service, boolean force)
+    public void playService(String profile, int service, boolean force, int frequency)
             throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         System.err.println("Authenticating with " + client.getBaseURL() + "...");
         AuthResponse auth = client.auth();
@@ -81,6 +81,32 @@ public class LeafRadioApp {
         if (service >= -1) {
             System.err.println("Setting service to " + service + "...");
             client.setService(profile, service);
+            ServiceInformation serviceInfo = null;
+            ProfileInformation prof = auth.getProfiles().stream().filter(p -> p.getName().equals(profile)).findAny()
+                    .orElse(null);
+            if (prof != null) {
+                if (service >= 0 && service < prof.getServices().size()) {
+                    serviceInfo = prof.getServices().get(service);
+                }
+            }
+            if (frequency > -1) {
+                if (serviceInfo == null) {
+                    return;
+                }
+            }
+
+            if (frequency != -1) {
+                if (serviceInfo == null) {
+                    System.err.println("Invalid service or profile - tuning is not available.");
+                    return;
+                }
+                if (serviceInfo.getAnalogTuning() == null) {
+                    System.err.println("This service doesn't support analog tuning.");
+                } else {
+                    System.err.println("Tuning to " + RadioUtils.createFrequencyString(frequency));
+                    client.analogTune(profile, (int) (frequency / serviceInfo.getAnalogTuning().getStep()));
+                }
+            }
         }
         System.err.println("Starting player...");
         player.start(profile);

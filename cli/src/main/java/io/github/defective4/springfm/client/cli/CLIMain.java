@@ -24,7 +24,10 @@ public class CLIMain {
             .addOption(Option.builder("s").desc("Service ID to play").converter(Integer::parseInt).longOpt("service")
                     .hasArg().argName("service id").build())
             .addOption(Option.builder("f").desc("Force unsupported arguments").longOpt("force").build())
-            .addOption(Option.builder("d").desc("Disabled Discord Rich Presence").longOpt("disable-rpc").build());
+            .addOption(Option.builder("d").desc("Disabled Discord Rich Presence").longOpt("disable-rpc").build())
+            .addOption(Option.builder().desc(
+                    "Tune to a frequency in Hz. Only available for services that support analog tuning. Requires --service option")
+                    .longOpt("freq").argName("Hz").hasArg().converter(Integer::parseInt).build());
 
     public static void main(String[] args) {
         try {
@@ -61,7 +64,16 @@ public class CLIMain {
                 }
                 int serviceId = cli.hasOption('s') ? cli.getParsedOptionValue('s') : -2;
                 String profile = cli.getOptionValue('p');
-                app.playService(profile, serviceId, cli.hasOption('f'));
+                int freq = -1;
+                if (cli.hasOption("freq")) {
+                    if (!cli.hasOption('s')) {
+                        System.err.println("--freq requires --service");
+                        System.exit(2);
+                        return;
+                    }
+                    freq = cli.getParsedOptionValue("freq");
+                }
+                app.playService(profile, serviceId, cli.hasOption('f'), freq);
             } else {
                 printHelp("Either --probe or --play is required");
                 System.exit(2);
