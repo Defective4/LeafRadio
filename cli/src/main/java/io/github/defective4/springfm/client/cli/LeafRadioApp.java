@@ -20,14 +20,16 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioApp {
     private final SpringFMClient client;
+    private final boolean enableDiscordPresence;
     private AudioAnnotation lastAnnotation;
-    private float lastFreq = -1;
 
+    private float lastFreq = -1;
     private final AudioPlayer player;
-    private final DiscordRPC rpc;
+    private DiscordRPC rpc;
 
     public LeafRadioApp(SpringFMClient client, boolean enableDiscordPresence) {
         this.client = client;
+        this.enableDiscordPresence = enableDiscordPresence;
         player = new AudioPlayer(client);
         player.addListener(new AudioPlayerEventAdapter() {
             @Override
@@ -62,7 +64,6 @@ public class LeafRadioApp {
                 updateRPC();
             }
         });
-        rpc = enableDiscordPresence ? new DiscordRPC() : null;
     }
 
     public void playService(String profile, int service, boolean force)
@@ -137,7 +138,10 @@ public class LeafRadioApp {
     }
 
     private void updateRPC() {
-        if (rpc == null) return;
+        if (!enableDiscordPresence) return;
+        if (rpc == null) {
+            rpc = new DiscordRPC();
+        }
         if (lastAnnotation != null) {
             rpc.setActivity(lastAnnotation.getDescription(), lastAnnotation.getTitle());
         } else if (lastFreq >= 0) {
