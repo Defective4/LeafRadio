@@ -68,6 +68,10 @@ public class SpringFMClient {
         return new DataInputStream(prepareConnection("profile/" + profile + "/data").getInputStream());
     }
 
+    public void setGain(String profile, float gain) throws IOException {
+        prepareConnection("profile/" + profile + "/gain", Map.of("gain", gain));
+    }
+
     public void setService(String profile, int index) throws IOException {
         prepareConnection("profile/" + profile + "/service", Map.of("index", index));
     }

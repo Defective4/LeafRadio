@@ -27,7 +27,10 @@ public class CLIMain {
             .addOption(Option.builder("d").desc("Disabled Discord Rich Presence").longOpt("disable-rpc").build())
             .addOption(Option.builder().desc(
                     "Tune to a frequency in Hz. Only available for services that support analog tuning. Requires --service option")
-                    .longOpt("freq").argName("Hz").hasArg().converter(Integer::parseInt).build());
+                    .longOpt("freq").argName("Hz").hasArg().converter(Integer::parseInt).build())
+            .addOption(Option.builder().desc(
+                    "Set service gain. Can only be used with services supporting gain adjusting. Requires --service option")
+                    .longOpt("gain").argName("db").hasArg().converter(Float::parseFloat).build());
 
     public static void main(String[] args) {
         try {
@@ -67,13 +70,22 @@ public class CLIMain {
                 int freq = -1;
                 if (cli.hasOption("freq")) {
                     if (!cli.hasOption('s')) {
-                        System.err.println("--freq requires --service");
+                        printHelp("--freq requires --service");
                         System.exit(2);
                         return;
                     }
                     freq = cli.getParsedOptionValue("freq");
                 }
-                app.playService(profile, serviceId, cli.hasOption('f'), freq);
+                float gain = -1;
+                if (cli.hasOption("gain")) {
+                    if (!cli.hasOption('s')) {
+                        printHelp("--gain requires --service");
+                        System.exit(2);
+                        return;
+                    }
+                    gain = cli.getParsedOptionValue("gain");
+                }
+                app.playService(profile, serviceId, cli.hasOption('f'), freq, gain);
             } else {
                 printHelp("Either --probe or --play is required");
                 System.exit(2);

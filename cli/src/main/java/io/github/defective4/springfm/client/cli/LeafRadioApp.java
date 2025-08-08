@@ -54,6 +54,11 @@ public class LeafRadioApp {
             }
 
             @Override
+            public void gainChanged(float newGain) {
+                System.err.println("Server changed gain to " + newGain + " dB");
+            }
+
+            @Override
             public void playerErrored(Exception ex) {
                 ex.printStackTrace();
             }
@@ -78,7 +83,7 @@ public class LeafRadioApp {
         });
     }
 
-    public void playService(String profile, int service, boolean force, int frequency)
+    public void playService(String profile, int service, boolean force, int frequency, float gain)
             throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         System.err.println("Authenticating with " + client.getBaseURL() + "...");
         AuthResponse auth = client.auth();
@@ -99,12 +104,6 @@ public class LeafRadioApp {
                     serviceInfo = prof.getServices().get(service);
                 }
             }
-            if (frequency > -1) {
-                if (serviceInfo == null) {
-                    return;
-                }
-            }
-
             if (frequency != -1) {
                 if (serviceInfo == null) {
                     System.err.println("Invalid service or profile - tuning is not available.");
@@ -112,10 +111,27 @@ public class LeafRadioApp {
                 }
                 if (serviceInfo.getAnalogTuning() == null) {
                     System.err.println("This service doesn't support analog tuning.");
-                } else {
-                    System.err.println("Tuning to " + RadioUtils.createFrequencyString(frequency));
-                    client.analogTune(profile, (int) (frequency / serviceInfo.getAnalogTuning().getStep()));
+                    return;
                 }
+                System.err.println("Tuning to " + RadioUtils.createFrequencyString(frequency));
+                client.analogTune(profile, (int) (frequency / serviceInfo.getAnalogTuning().getStep()));
+            }
+
+            if (gain >= 0) {
+                if (serviceInfo == null) {
+                    System.err.println("Invalid service or profile - gain adjusting is not available.");
+                    return;
+                }
+                if (!serviceInfo.getGainInfo().isGainSupported()) {
+                    System.err.println("This service doesn't support gain adjusting.");
+                    return;
+                }
+                if (gain > serviceInfo.getGainInfo().getMaxGain()) {
+                    System.err.println("Gain value out of range");
+                    return;
+                }
+                System.err.println("Setting gain to " + gain + " dB");
+                client.setGain(profile, gain);
             }
         }
         System.err.println("Starting player...");
