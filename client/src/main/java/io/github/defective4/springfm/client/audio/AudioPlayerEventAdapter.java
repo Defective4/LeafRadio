@@ -27,6 +27,14 @@ public abstract class AudioPlayerEventAdapter implements AudioPlayerEventListene
     }
 
     @Override
+    public void playerErrored(Exception ex) {
+    }
+
+    @Override
+    public void playerStopped() {
+    }
+
+    @Override
     public void serviceChanged(int serviceIndex) {
     }
 

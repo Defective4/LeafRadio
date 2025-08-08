@@ -15,5 +15,9 @@ public interface AudioPlayerEventListener {
 
     void gainChanged(float newGain);
 
+    void playerErrored(Exception ex);
+
+    void playerStopped();
+
     void serviceChanged(int serviceIndex);
 }

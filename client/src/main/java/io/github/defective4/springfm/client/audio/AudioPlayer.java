@@ -77,6 +77,7 @@ public class AudioPlayer {
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
+                listeners.forEach(ls -> ls.playerErrored(e));
             }
         });
         dataTask = ThreadUtils.submit(() -> {
@@ -121,6 +122,7 @@ public class AudioPlayer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                listeners.forEach(ls -> ls.playerErrored(e2));
             }
         });
     }
@@ -131,6 +133,7 @@ public class AudioPlayer {
         if (dataTask != null) dataTask.cancel(true);
         if (audioInputStream != null) audioInputStream.close();
         if (controlInputStream != null) controlInputStream.close();
+        listeners.forEach(AudioPlayerEventListener::playerStopped);
     }
 
     private void reopenAudioSink(AudioFormat fmt) throws LineUnavailableException {
