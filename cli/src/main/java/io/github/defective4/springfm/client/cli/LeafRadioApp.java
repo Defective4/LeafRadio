@@ -25,7 +25,9 @@ public class LeafRadioApp {
 
     private float lastFreq = -1;
     private final AudioPlayer player;
+    private ProfileInformation prof;
     private DiscordRPC rpc;
+    private ServiceInformation serviceInfo;
 
     public LeafRadioApp(SpringFMClient client, boolean enableDiscordPresence) {
         this.client = client;
@@ -34,10 +36,12 @@ public class LeafRadioApp {
         player.addListener(new AudioPlayerEventAdapter() {
             @Override
             public void analogTuned(float frequency) {
-                frequency *= 1e5f;
+                if (serviceInfo != null && serviceInfo.getAnalogTuning() != null)
+                    frequency *= serviceInfo.getAnalogTuning().getStep();
                 if (frequency == lastFreq) return;
                 lastFreq = frequency;
                 updateRPC();
+                System.err.println("Server changed frequency to " + RadioUtils.createFrequencyString(frequency));
             }
 
             @Override
@@ -45,6 +49,8 @@ public class LeafRadioApp {
                 if (annotation.equals(lastAnnotation)) return;
                 lastAnnotation = annotation;
                 updateRPC();
+                System.err.println("Server sent an audio annotation: " + annotation.getTitle() + " | "
+                        + annotation.getDescription());
             }
 
             @Override
@@ -62,6 +68,12 @@ public class LeafRadioApp {
                 lastAnnotation = null;
                 lastFreq = -1;
                 updateRPC();
+                System.err.println("Server changed service to #" + serviceIndex);
+                if (prof != null) {
+                    serviceInfo = serviceIndex >= 0 && serviceIndex < prof.getServices().size()
+                            ? prof.getServices().get(serviceIndex)
+                            : null;
+                }
             }
         });
     }
@@ -81,9 +93,7 @@ public class LeafRadioApp {
         if (service >= -1) {
             System.err.println("Setting service to " + service + "...");
             client.setService(profile, service);
-            ServiceInformation serviceInfo = null;
-            ProfileInformation prof = auth.getProfiles().stream().filter(p -> p.getName().equals(profile)).findAny()
-                    .orElse(null);
+            prof = auth.getProfiles().stream().filter(p -> p.getName().equals(profile)).findAny().orElse(null);
             if (prof != null) {
                 if (service >= 0 && service < prof.getServices().size()) {
                     serviceInfo = prof.getServices().get(service);
@@ -169,7 +179,9 @@ public class LeafRadioApp {
             rpc = new DiscordRPC();
         }
         if (lastAnnotation != null) {
-            rpc.setActivity(lastAnnotation.getDescription(), lastAnnotation.getTitle());
+            String title = lastAnnotation.getTitle();
+            if (title != null) title = title.strip();
+            rpc.setActivity(lastAnnotation.getDescription(), title);
         } else if (lastFreq >= 0) {
             rpc.setActivity("Listening to " + RadioUtils.createFrequencyString(lastFreq), null);
         } else {
