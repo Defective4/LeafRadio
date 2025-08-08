@@ -48,6 +48,10 @@ public class SpringFMClient {
         return baseURL;
     }
 
+    public Gson getGson() {
+        return gson;
+    }
+
     public AudioInputStream openAudioStream(String profile) throws IOException, UnsupportedAudioFileException {
         DataInputStream in = new DataInputStream(prepareConnection("profile/" + profile + "/audio").getInputStream());
         byte[] header = new byte[44];

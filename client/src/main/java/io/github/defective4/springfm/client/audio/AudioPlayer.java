@@ -2,7 +2,10 @@ package io.github.defective4.springfm.client.audio;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
 import javax.sound.sampled.AudioFormat;
@@ -14,17 +17,33 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import io.github.defective4.springfm.client.SpringFMClient;
 import io.github.defective4.springfm.client.utils.ThreadUtils;
+import io.github.defective4.springfm.server.data.AudioAnnotation;
+import io.github.defective4.springfm.server.data.PlayerCommand;
 import io.github.defective4.springfm.server.data.SerializableAudioFormat;
 import io.github.defective4.springfm.server.packet.Packet;
+import io.github.defective4.springfm.server.packet.PacketPayload;
 
 public class AudioPlayer {
     private DataInputStream audioInputStream, controlInputStream;
     private SourceDataLine audioSink;
     private Future<?> audioTask;
     private final SpringFMClient client;
+    private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
 
     public AudioPlayer(SpringFMClient client) {
         this.client = Objects.requireNonNull(client);
+    }
+
+    public boolean addListener(AudioPlayerEventListener listener) {
+        return listeners.add(listener);
+    }
+
+    public List<AudioPlayerEventListener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    public boolean removeListener(AudioPlayerEventListener listener) {
+        return listeners.remove(listener);
     }
 
     public void start(String profile) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
@@ -38,7 +57,9 @@ public class AudioPlayer {
                 while (true) { // TODO isAlive
                     audioInputStream.readFully(buffer);
                     if (SerializableAudioFormat.Codec.isSwitchFrame(buffer)) {
-                        reopenAudioSink(SerializableAudioFormat.Codec.fromSwitchFrame(buffer));
+                        AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
+                        reopenAudioSink(newFormat);
+                        listeners.forEach(ls -> ls.audioFormatChanged(newFormat));
                     } else {
                         audioSink.write(buffer, 0, buffer.length);
                     }
@@ -52,7 +73,36 @@ public class AudioPlayer {
             try {
                 while (true) { // TODO isAlive
                     Packet packet = Packet.fromStream(controlInputStream);
-                    // TODO handle packets
+                    PacketPayload payload = packet.getPayload();
+                    switch (payload.getKey().toLowerCase()) {
+                        case "annotation" -> {
+                            AudioAnnotation annotation = payload.getPayloadAsObject(AudioAnnotation.class);
+                            listeners.forEach(ls -> ls.annotationReceived(annotation));
+                        }
+                        case "command" -> {
+                            PlayerCommand cmd = payload.getPayloadAsObject(PlayerCommand.class);
+                            switch (cmd.getCommand()) {
+                                case PlayerCommand.COMMAND_CHANGE_SERVICE -> {
+                                    int index = Integer.parseInt(cmd.getData());
+                                    listeners.forEach(ls -> ls.serviceChanged(index));
+                                }
+                                case PlayerCommand.COMMAND_ANALOG_TUNE -> {
+                                    float freq = Float.parseFloat(cmd.getData());
+                                    listeners.forEach(ls -> ls.analogTuned(freq));
+                                }
+                                case PlayerCommand.COMMAND_DIGITAL_TUNE -> {
+                                    int index = Integer.parseInt(cmd.getData());
+                                    listeners.forEach(ls -> ls.digitalTuned(index));
+                                }
+                                case PlayerCommand.COMMAND_ADJUST_GAIN -> {
+                                    float newGain = Float.parseFloat(cmd.getData());
+                                    listeners.forEach(ls -> ls.gainChanged(newGain));
+                                }
+                                default -> {}
+                            }
+                        }
+                        default -> {}
+                    }
                 }
             } catch (Exception e2) {
                 e2.printStackTrace();
