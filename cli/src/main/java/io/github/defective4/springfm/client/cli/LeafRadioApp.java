@@ -139,10 +139,10 @@ public class LeafRadioApp {
                     case ServiceInformation.TUNING_TYPE_DIGITAL -> "Digital";
                     default -> "Unknown";
                 });
-                System.out.print("      - Gain: ");
+                System.out.print("    - Gain: ");
                 GainInformation gainInfo = service.getGainInfo();
                 System.out.println(gainInfo.isGainSupported() ? gainInfo.getMaxGain() + " db" : "Unsupported");
-                System.out.print("      - Analog tuning: ");
+                System.out.print("    - Analog tuning: ");
                 AnalogTuningInformation analogTuning = service.getAnalogTuning();
                 if (analogTuning == null) {
                     System.out.println("Unsupported");
@@ -152,7 +152,7 @@ public class LeafRadioApp {
                     System.out.println("        Max. frequency: " + analogTuning.getMaxFreq() + " Hz");
                     System.out.println("        Step: " + analogTuning.getStep() + " Hz");
                 }
-                System.out.print("      - Digital tuning: ");
+                System.out.print("    - Digital tuning: ");
                 DigitalTuningInformation digitalTuning = service.getDigitalTuning();
                 if (digitalTuning == null) {
                     System.out.println("Unsupported");
@@ -160,7 +160,7 @@ public class LeafRadioApp {
                     System.out.println();
                     System.out.println("        Stations:");
                     for (String station : digitalTuning.getStations()) {
-                        System.out.println("            - " + station);
+                        System.out.println("        - " + station);
                     }
                 }
             }
