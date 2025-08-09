@@ -111,35 +111,7 @@ public class LeafRadioApp {
                     serviceInfo = prof.getServices().get(service);
                 }
             }
-            if (frequency != -1) {
-                if (serviceInfo == null) {
-                    System.err.println("Invalid service or profile - tuning is not available.");
-                    return;
-                }
-                if (serviceInfo.getAnalogTuning() == null) {
-                    System.err.println("This service doesn't support analog tuning.");
-                    return;
-                }
-                System.err.println("Tuning to " + RadioUtils.createFrequencyString(frequency));
-                client.analogTune(profile, (int) (frequency / serviceInfo.getAnalogTuning().getStep()));
-            }
-
-            if (gain >= 0) {
-                if (serviceInfo == null) {
-                    System.err.println("Invalid service or profile - gain adjusting is not available.");
-                    return;
-                }
-                if (!serviceInfo.getGainInfo().isGainSupported()) {
-                    System.err.println("This service doesn't support gain adjusting.");
-                    return;
-                }
-                if (gain > serviceInfo.getGainInfo().getMaxGain()) {
-                    System.err.println("Gain value out of range");
-                    return;
-                }
-                System.err.println("Setting gain to " + gain + " dB");
-                client.setGain(profile, gain);
-            }
+            if (!analogTune(profile, frequency) || !adjustGain(profile, gain)) return;
         }
         System.err.println("Starting player...");
         player.start(profile);
@@ -194,6 +166,42 @@ public class LeafRadioApp {
             }
             System.out.println();
         }
+    }
+
+    private boolean adjustGain(String profile, float gain) throws IOException {
+        if (gain >= 0) {
+            if (serviceInfo == null) {
+                System.err.println("Invalid service or profile - gain adjusting is not available.");
+                return false;
+            }
+            if (!serviceInfo.getGainInfo().isGainSupported()) {
+                System.err.println("This service doesn't support gain adjusting.");
+                return false;
+            }
+            if (gain > serviceInfo.getGainInfo().getMaxGain()) {
+                System.err.println("Gain value out of range");
+                return false;
+            }
+            System.err.println("Setting gain to " + gain + " dB");
+            client.setGain(profile, gain);
+        }
+        return true;
+    }
+
+    private boolean analogTune(String profile, int frequency) throws IOException {
+        if (frequency != -1) {
+            if (serviceInfo == null) {
+                System.err.println("Invalid service or profile - tuning is not available.");
+                return false;
+            }
+            if (serviceInfo.getAnalogTuning() == null) {
+                System.err.println("This service doesn't support analog tuning.");
+                return false;
+            }
+            System.err.println("Tuning to " + RadioUtils.createFrequencyString(frequency));
+            client.analogTune(profile, (int) (frequency / serviceInfo.getAnalogTuning().getStep()));
+        }
+        return true;
     }
 
     private synchronized void updateRPC() {
