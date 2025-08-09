@@ -114,21 +114,13 @@ public class LeafRadioCLIApp {
         auth = client.auth();
         profile = auth.getProfiles().stream().filter(p -> p.getName().equals(profileName)).findAny()
                 .orElseThrow(() -> new IllegalArgumentException("Profile \"" + profileName + "\" was not found."));
-        if (changeService) {
-            if (service >= profile.getServices().size())
-                throw new IllegalArgumentException("Service index out of bounds (index = " + service + ", size = "
-                        + profile.getServices().size() + ")");
-            logVerbose("Sending service change command (service = " + service + ")");
-            client.setService(profile.getName(), service);
-            currentService = profile.getServices().get(service);
-        }
-        if (changeFrequency) {
-            if (currentService == null || currentService.getAnalogTuning() == null)
-                throw new IllegalArgumentException("This service doesn't support analog tuning");
-            logVerbose("Sending frequency change command (frequency = " + RadioUtils.createFrequencyString(frequency)
-                    + ")");
-            client.analogTune(profile.getName(), (int) (frequency / currentService.getAnalogTuning().getStep()));
-        }
+
+        validateService();
+        validateFrequency();
+
+        changeService();
+        changeFrequency();
+
         audioPlayer.start(profile.getName());
 
         synchronized (LeafRadioCLIApp.class) {
@@ -201,8 +193,46 @@ public class LeafRadioCLIApp {
         }
     }
 
+    private void changeFrequency() throws IOException {
+        if (changeFrequency) {
+            logVerbose("Sending frequency change command (frequency = " + RadioUtils.createFrequencyString(frequency)
+                    + ")");
+            client.analogTune(profile.getName(), (int) (frequency / currentService.getAnalogTuning().getStep()));
+        }
+    }
+
+    private void changeService() throws IOException {
+        if (changeService) {
+            logVerbose("Sending service change command (service = " + service + ")");
+            client.setService(profile.getName(), service);
+        }
+    }
+
     private void logVerbose(String msg) {
         if (!verbose) return;
         System.err.println(msg);
+    }
+
+    private void validateFrequency() {
+        if (changeFrequency) {
+            if (currentService == null || currentService.getAnalogTuning() == null)
+                throw new IllegalArgumentException("This service doesn't support analog tuning");
+            AnalogTuningInformation analog = currentService.getAnalogTuning();
+            float min = analog.getMinFreq();
+            float max = analog.getMaxFreq();
+            if (frequency < min || frequency > max)
+                throw new IllegalArgumentException(String.format("Frequency %s is out of range of %s - %s",
+                        RadioUtils.createFrequencyString(frequency), RadioUtils.createFrequencyString(min),
+                        RadioUtils.createFrequencyString(max)));
+        }
+    }
+
+    private void validateService() {
+        if (changeService) {
+            if (service >= profile.getServices().size())
+                throw new IllegalArgumentException("Service index out of bounds (index = " + service + ", size = "
+                        + profile.getServices().size() + ")");
+            currentService = profile.getServices().get(service);
+        }
     }
 }
