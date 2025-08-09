@@ -23,6 +23,5 @@
     </build>
     <modules>
     	<module>client</module>
-    	<module>cli</module>
     </modules>
 </project>
