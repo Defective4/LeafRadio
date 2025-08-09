@@ -24,4 +24,18 @@ public class RadioUtils {
         if (fval % 1 == 0) return (int) fval + " " + unit;
         return fval + " " + unit;
     }
+
+    public static int parseFrequencyString(String str) {
+        if (str.isEmpty()) throw new IllegalArgumentException("Frequency is empty");
+        char modifier = str.charAt(str.length() - 1);
+        if (Character.isDigit(modifier)) return Integer.parseInt(str);
+        str = str.substring(0, str.length() - 1);
+        int multiplier = switch (Character.toLowerCase(modifier)) {
+            case 'k' -> 1000;
+            case 'm' -> 1000000;
+            case 'g' -> 1000000000;
+            default -> throw new IllegalArgumentException("Invalid modifier '" + modifier + "'");
+        };
+        return (int) (Double.parseDouble(str) * multiplier);
+    }
 }

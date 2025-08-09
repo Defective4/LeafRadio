@@ -9,8 +9,10 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import io.github.defective4.springfm.client.SpringFMClient;
+import io.github.defective4.springfm.client.utils.RadioUtils;
 
 public class CLIMain {
 
@@ -20,7 +22,10 @@ public class CLIMain {
             .addOption(Option.builder("v").desc("Be more verbose.").longOpt("verbose").build())
             .addOption(Option.builder("s").longOpt("service")
                     .desc("Service index to play. Set to -1 to use empty service.").argName("index").hasArg()
-                    .converter(Integer::parseInt).build());
+                    .converter(Integer::parseInt).build())
+            .addOption(Option.builder("F").longOpt("frequency")
+                    .desc("Tune current service. Can only be used with analog services. Requires the --service option.")
+                    .argName("Hz").hasArg().build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -54,6 +59,10 @@ public class CLIMain {
             if (cli.hasOption('v')) builder.verbose();
             if (cli.hasOption('p')) builder.profile(cli.getOptionValue('p'));
             if (cli.hasOption('s')) builder.service(cli.getParsedOptionValue('s'));
+            if (cli.hasOption('F')) {
+                String freqString = cli.getOptionValue('F');
+                builder.frequency(RadioUtils.parseFrequencyString(freqString));
+            }
 
             LeafRadioCLIApp app = builder.build();
             switch (args[0].toLowerCase()) {
@@ -64,6 +73,10 @@ public class CLIMain {
                     System.exit(1);
                 }
             }
+        } catch (ParseException e) {
+            printHelp("Invalid command line argument: " + e.getCause().getMessage());
+            System.exit(4);
+            return;
         } catch (IllegalArgumentException e) {
             printHelp(e.getMessage());
             System.exit(3);

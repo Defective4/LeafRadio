@@ -11,6 +11,7 @@ import io.github.defective4.springfm.cli.util.IndentationPrinter;
 import io.github.defective4.springfm.client.SpringFMClient;
 import io.github.defective4.springfm.client.audio.AudioPlayer;
 import io.github.defective4.springfm.client.audio.AudioPlayerEventAdapter;
+import io.github.defective4.springfm.client.utils.RadioUtils;
 import io.github.defective4.springfm.server.data.AnalogTuningInformation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
@@ -21,8 +22,10 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 public class LeafRadioCLIApp {
 
     public static class Builder {
+        private boolean changeFrequency;
         private boolean changeService;
         private final SpringFMClient client;
+        private int frequency;
         private String profile;
         private int service;
         private boolean verbose;
@@ -32,7 +35,15 @@ public class LeafRadioCLIApp {
         }
 
         public LeafRadioCLIApp build() {
-            return new LeafRadioCLIApp(client, profile, verbose, changeService, service);
+            if (changeFrequency && !changeService)
+                throw new IllegalArgumentException("You need to specify a service index to change frequency.");
+            return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency);
+        }
+
+        public Builder frequency(int frequency) {
+            this.frequency = frequency;
+            changeFrequency = true;
+            return this;
         }
 
         public Builder profile(String profile) {
@@ -55,23 +66,34 @@ public class LeafRadioCLIApp {
 
     private final AudioPlayer audioPlayer;
     private AuthResponse auth;
+    private final boolean changeFrequency;
     private final boolean changeService;
     private final SpringFMClient client;
     private ServiceInformation currentService;
+    private final int frequency;
     private ProfileInformation profile;
     private final String profileName;
     private final int service;
     private final boolean verbose;
 
-    private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService,
-            int service) {
+    private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
+            boolean changeFrequency, int frequency) {
         this.client = client;
         profileName = profile;
         this.verbose = verbose;
         this.changeService = changeService;
         this.service = service;
+        this.changeFrequency = changeFrequency;
+        this.frequency = frequency;
         audioPlayer = new AudioPlayer(client);
         audioPlayer.addListener(new AudioPlayerEventAdapter() {
+
+            @Override
+            public void analogTuned(float frequency) {
+                float step = currentService == null || currentService.getAnalogTuning() == null ? 1
+                        : currentService.getAnalogTuning().getStep();
+                logVerbose("Server changed frequency to " + RadioUtils.createFrequencyString(frequency * step));
+            }
 
             @Override
             public void serviceChanged(int serviceIndex) {
@@ -98,6 +120,14 @@ public class LeafRadioCLIApp {
                         + profile.getServices().size() + ")");
             logVerbose("Sending service change command (service = " + service + ")");
             client.setService(profile.getName(), service);
+            currentService = profile.getServices().get(service);
+        }
+        if (changeFrequency) {
+            if (currentService == null || currentService.getAnalogTuning() == null)
+                throw new IllegalArgumentException("This service doesn't support analog tuning");
+            logVerbose("Sending frequency change command (frequency = " + RadioUtils.createFrequencyString(frequency)
+                    + ")");
+            client.analogTune(profile.getName(), (int) (frequency / currentService.getAnalogTuning().getStep()));
         }
         audioPlayer.start(profile.getName());
 
