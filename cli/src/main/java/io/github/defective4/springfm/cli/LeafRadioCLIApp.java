@@ -4,8 +4,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import io.github.defective4.springfm.cli.util.IndentationPrinter;
 import io.github.defective4.springfm.client.SpringFMClient;
+import io.github.defective4.springfm.client.audio.AudioPlayer;
+import io.github.defective4.springfm.client.audio.AudioPlayerEventAdapter;
 import io.github.defective4.springfm.server.data.AnalogTuningInformation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
@@ -16,8 +21,10 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 public class LeafRadioCLIApp {
 
     public static class Builder {
+        private boolean changeService;
         private final SpringFMClient client;
         private String profile;
+        private int service;
         private boolean verbose;
 
         public Builder(SpringFMClient client) {
@@ -25,11 +32,18 @@ public class LeafRadioCLIApp {
         }
 
         public LeafRadioCLIApp build() {
-            return new LeafRadioCLIApp(client, profile, verbose);
+            return new LeafRadioCLIApp(client, profile, verbose, changeService, service);
         }
 
         public Builder profile(String profile) {
             this.profile = profile;
+            return this;
+        }
+
+        public Builder service(int service) {
+            if (service < -1) throw new IllegalStateException("service < -1");
+            this.service = service;
+            changeService = true;
             return this;
         }
 
@@ -39,25 +53,70 @@ public class LeafRadioCLIApp {
         }
     }
 
+    private final AudioPlayer audioPlayer;
+    private AuthResponse auth;
+    private final boolean changeService;
     private final SpringFMClient client;
-    private final String profile;
+    private ServiceInformation currentService;
+    private ProfileInformation profile;
+    private final String profileName;
+    private final int service;
     private final boolean verbose;
 
-    private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose) {
+    private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService,
+            int service) {
         this.client = client;
-        this.profile = profile;
+        profileName = profile;
         this.verbose = verbose;
+        this.changeService = changeService;
+        this.service = service;
+        audioPlayer = new AudioPlayer(client);
+        audioPlayer.addListener(new AudioPlayerEventAdapter() {
+
+            @Override
+            public void serviceChanged(int serviceIndex) {
+                if (serviceIndex < 0 || serviceIndex >= LeafRadioCLIApp.this.profile.getServices().size())
+                    currentService = null;
+                else
+                    currentService = LeafRadioCLIApp.this.profile.getServices().get(serviceIndex);
+                logVerbose("Service changed to "
+                        + (currentService == null ? "none" : currentService.getName() + " (#" + serviceIndex + ")"));
+            }
+
+        });
+    }
+
+    public void play() throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+        if (profileName == null) throw new IllegalArgumentException("Profile name is required to play the stream");
+        logVerbose("Authenticating with the server");
+        auth = client.auth();
+        profile = auth.getProfiles().stream().filter(p -> p.getName().equals(profileName)).findAny()
+                .orElseThrow(() -> new IllegalArgumentException("Profile \"" + profileName + "\" was not found."));
+        if (changeService) {
+            if (service >= profile.getServices().size())
+                throw new IllegalArgumentException("Service index out of bounds (index = " + service + ", size = "
+                        + profile.getServices().size() + ")");
+            logVerbose("Sending service change command (service = " + service + ")");
+            client.setService(profile.getName(), service);
+        }
+        audioPlayer.start(profile.getName());
+
+        synchronized (LeafRadioCLIApp.class) {
+            try {
+                LeafRadioCLIApp.class.wait();
+            } catch (InterruptedException e) {}
+        }
     }
 
     public void probe() throws IOException {
         logVerbose("Connecting to the server...");
-        AuthResponse auth = client.auth();
+        auth = client.auth();
         logVerbose(String.format("Received %s profiles with %s services total", auth.getProfiles().size(),
                 auth.getProfiles().stream().mapToInt(p -> p.getServices().size()).sum()));
         List<ProfileInformation> toPrint;
-        if (profile != null) {
-            toPrint = auth.getProfiles().stream().filter(p -> p.getName().equals(profile)).toList();
-            if (toPrint.isEmpty()) throw new IllegalArgumentException("Profile \"" + profile + "\" not found.");
+        if (profileName != null) {
+            toPrint = auth.getProfiles().stream().filter(p -> p.getName().equals(profileName)).toList();
+            if (toPrint.isEmpty()) throw new IllegalArgumentException("Profile \"" + profileName + "\" was not found.");
         } else
             toPrint = auth.getProfiles();
 

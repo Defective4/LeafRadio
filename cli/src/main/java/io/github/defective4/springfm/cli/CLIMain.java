@@ -17,7 +17,10 @@ public class CLIMain {
     private static final Options OPTIONS = new Options().addOption(Option.builder("p").hasArg().argName("profile").desc(
             "Profile to connect to. If used with probe command, it will only show services belonging to this profile.")
             .longOpt("profile").build())
-            .addOption(Option.builder("v").desc("Be more verbose.").longOpt("verbose").build());
+            .addOption(Option.builder("v").desc("Be more verbose.").longOpt("verbose").build())
+            .addOption(Option.builder("s").longOpt("service")
+                    .desc("Service index to play. Set to -1 to use empty service.").argName("index").hasArg()
+                    .converter(Integer::parseInt).build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -50,9 +53,11 @@ public class CLIMain {
 
             if (cli.hasOption('v')) builder.verbose();
             if (cli.hasOption('p')) builder.profile(cli.getOptionValue('p'));
+            if (cli.hasOption('s')) builder.service(cli.getParsedOptionValue('s'));
 
             LeafRadioCLIApp app = builder.build();
             switch (args[0].toLowerCase()) {
+                case "play" -> app.play();
                 case "probe" -> app.probe();
                 default -> {
                     printHelp("Unrecognized command: " + args[0]);
