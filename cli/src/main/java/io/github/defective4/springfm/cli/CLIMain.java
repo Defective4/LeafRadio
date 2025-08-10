@@ -3,6 +3,7 @@ package io.github.defective4.springfm.cli;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -32,7 +33,14 @@ public class CLIMain {
             .addOption(Option.builder("S").longOpt("station").argName("index").hasArg().converter(Integer::parseInt)
                     .desc("Set service's station index. Can only be used with digital services. Requires the --service option.")
                     .build())
-            .addOption(Option.builder("h").longOpt("help").desc("Show this help").build());
+            .addOption(Option.builder("h").longOpt("help").desc("Show this help").build())
+            .addOption(Option.builder("a").longOpt("print-annotations").desc(
+                    "If enabled, the player will print received audio annotations to standard output in format specified by --annotations-format")
+                    .build())
+            .addOption(Option.builder("f").longOpt("annotations-format")
+                    .desc("Display annotations in the specified format. Available values: "
+                            + Arrays.toString(AnnotationFormat.values()) + ". Default value: " + AnnotationFormat.TEXT)
+                    .hasArg().argName("format").converter(s -> AnnotationFormat.valueOf(s.toUpperCase())).build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -74,6 +82,9 @@ public class CLIMain {
             if (cli.hasOption('F')) builder.frequency(RadioUtils.parseFrequencyString(cli.getOptionValue('F')));
             if (cli.hasOption('S')) builder.setStation(cli.getParsedOptionValue('S'));
             if (cli.hasOption('G')) builder.gain(cli.getParsedOptionValue('G'));
+
+            if (cli.hasOption('a')) builder.displayAnnotations();
+            if (cli.hasOption('f')) builder.annotationsFormat(cli.getParsedOptionValue('f'));
 
             LeafRadioCLIApp app = builder.build();
             switch (args[0].toLowerCase()) {

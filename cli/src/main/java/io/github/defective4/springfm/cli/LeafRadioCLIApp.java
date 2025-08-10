@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -15,6 +16,7 @@ import io.github.defective4.springfm.client.audio.AudioPlayer;
 import io.github.defective4.springfm.client.audio.AudioPlayerEventAdapter;
 import io.github.defective4.springfm.client.utils.RadioUtils;
 import io.github.defective4.springfm.server.data.AnalogTuningInformation;
+import io.github.defective4.springfm.server.data.AudioAnnotation;
 import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.DigitalTuningInformation;
 import io.github.defective4.springfm.server.data.GainInformation;
@@ -23,11 +25,13 @@ import io.github.defective4.springfm.server.data.ServiceInformation;
 
 public class LeafRadioCLIApp {
     public static class Builder {
+        private AnnotationFormat annotationsFormat = AnnotationFormat.TEXT;
         private boolean changeFrequency;
         private boolean changeGain;
         private boolean changeService;
         private boolean changeStation;
         private final SpringFMClient client;
+        private boolean displayAnnotations;
         private int frequency;
         private float gain;
         private String profile;
@@ -39,13 +43,23 @@ public class LeafRadioCLIApp {
             this.client = Objects.requireNonNull(client);
         }
 
+        public Builder annotationsFormat(AnnotationFormat annotationsFormat) {
+            this.annotationsFormat = Objects.requireNonNull(annotationsFormat);
+            return this;
+        }
+
         public LeafRadioCLIApp build() {
             if (changeFrequency && !changeService)
                 throw new IllegalArgumentException("You need to specify a service index to change frequency.");
             if (changeGain && !changeService)
                 throw new IllegalArgumentException("You need to specify a service index to adjust gain.");
             return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency,
-                    changeGain, gain, changeStation, station);
+                    changeGain, gain, changeStation, station, displayAnnotations, annotationsFormat);
+        }
+
+        public Builder displayAnnotations() {
+            displayAnnotations = true;
+            return this;
         }
 
         public Builder frequency(int frequency) {
@@ -86,6 +100,7 @@ public class LeafRadioCLIApp {
         }
     }
 
+    private final AnnotationFormat annotationsFormat;
     private final AudioPlayer audioPlayer;
     private AuthResponse auth;
     private final boolean changeFrequency;
@@ -94,10 +109,11 @@ public class LeafRadioCLIApp {
     private final boolean changeStation;
     private final SpringFMClient client;
     private ServiceInformation currentService;
+    private final boolean displayAnnotations;
     private int frequency;
+
     private float gain;
     private MessageDigest md;
-
     private ProfileInformation profile;
     private final String profileName;
     private final int service;
@@ -105,8 +121,8 @@ public class LeafRadioCLIApp {
     private final boolean verbose;
 
     private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
-            boolean changeFrequency, int frequency, boolean changeGain, float gain, boolean changeStation,
-            int station) {
+            boolean changeFrequency, int frequency, boolean changeGain, float gain, boolean changeStation, int station,
+            boolean displayAnnotations, AnnotationFormat annotationsFormat) {
         this.client = client;
         profileName = profile;
         this.verbose = verbose;
@@ -118,6 +134,8 @@ public class LeafRadioCLIApp {
         this.gain = gain;
         this.changeStation = changeStation;
         this.station = station;
+        this.displayAnnotations = displayAnnotations;
+        this.annotationsFormat = annotationsFormat;
         audioPlayer = new AudioPlayer(client);
         audioPlayer.addListener(new AudioPlayerEventAdapter() {
 
@@ -127,6 +145,16 @@ public class LeafRadioCLIApp {
                         : currentService.getAnalogTuning().getStep();
                 LeafRadioCLIApp.this.frequency = (int) (frequency * step);
                 logVerbose("Server changed frequency to " + RadioUtils.createFrequencyString(frequency * step));
+            }
+
+            @Override
+            public void annotationReceived(AudioAnnotation annotation) {
+                if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
+            }
+
+            @Override
+            public void audioFormatChanged(AudioFormat newFormat) {
+                logVerbose("Server has changed the audio format: " + newFormat);
             }
 
             @Override
