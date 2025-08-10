@@ -37,10 +37,6 @@ public class SpringFMClient {
         this.baseURL = base;
     }
 
-    public void digitalTune(String profile, int station) throws IOException {
-        prepareConnection("profile/" + profile + "/tune/digital", Map.of("index", station));
-    }
-
     public void analogTune(String profile, int freq) throws IOException {
         prepareConnection("profile/" + profile + "/tune/analog", Map.of("frequency", freq));
     }
@@ -50,6 +46,10 @@ public class SpringFMClient {
         try (Reader reader = new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)) {
             return gson.fromJson(reader, AuthResponse.class);
         }
+    }
+
+    public void digitalTune(String profile, int station) throws IOException {
+        prepareConnection("profile/" + profile + "/tune/digital", Map.of("index", station));
     }
 
     public String getBaseURL() {

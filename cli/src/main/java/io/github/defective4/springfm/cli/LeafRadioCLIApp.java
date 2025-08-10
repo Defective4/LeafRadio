@@ -220,6 +220,7 @@ public class LeafRadioCLIApp {
         logVerbose("Starting player");
         audioPlayer.setProfileVerifier(md, auth);
         audioPlayer.start(profile.getName());
+        logVerbose("Started audio player with format " + audioPlayer.getFormat());
 
         synchronized (LeafRadioCLIApp.class) {
             try {

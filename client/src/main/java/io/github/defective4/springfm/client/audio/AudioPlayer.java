@@ -33,9 +33,10 @@ public class AudioPlayer {
     private final SpringFMClient client;
     private boolean dataStarted;
     private Future<?> dataTask;
+    private AudioFormat format;
     private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
-    private MessageDigest md;
 
+    private MessageDigest md;
     private boolean muted;
 
     public AudioPlayer(SpringFMClient client) {
@@ -44,6 +45,10 @@ public class AudioPlayer {
 
     public boolean addListener(AudioPlayerEventListener listener) {
         return listeners.add(listener);
+    }
+
+    public AudioFormat getFormat() {
+        return format;
     }
 
     public List<AudioPlayerEventListener> getListeners() {
@@ -77,6 +82,7 @@ public class AudioPlayer {
 
     public void start(String profile) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         if (isAlive()) stop();
+        format = null;
         setMuted(false);
         controlInputStream = client.openControlStream(profile);
         dataStarted = false;
@@ -175,6 +181,7 @@ public class AudioPlayer {
     }
 
     public void stop() throws IOException {
+        format = null;
         dataStarted = false;
         if (audioSink != null) audioSink.close();
         if (audioTask != null) audioTask.cancel(true);
@@ -193,5 +200,6 @@ public class AudioPlayer {
         audioSink = AudioSystem.getSourceDataLine(fmt);
         audioSink.open();
         audioSink.start();
+        format = fmt;
     }
 }
