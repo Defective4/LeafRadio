@@ -25,7 +25,10 @@ public class CLIMain {
                     .converter(Integer::parseInt).build())
             .addOption(Option.builder("F").longOpt("frequency")
                     .desc("Tune current service. Can only be used with analog services. Requires the --service option.")
-                    .argName("Hz").hasArg().build());
+                    .argName("Hz").hasArg().build())
+            .addOption(Option.builder("G").longOpt("gain").desc(
+                    "Set service gain. Can only be used with services that support gain adjusting. Requires the --service option.")
+                    .argName("dB").hasArg().converter(Float::parseFloat).build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -63,6 +66,7 @@ public class CLIMain {
                 String freqString = cli.getOptionValue('F');
                 builder.frequency(RadioUtils.parseFrequencyString(freqString));
             }
+            if (cli.hasOption('G')) builder.gain(cli.getParsedOptionValue('G'));
 
             LeafRadioCLIApp app = builder.build();
             switch (args[0].toLowerCase()) {
@@ -74,7 +78,8 @@ public class CLIMain {
                 }
             }
         } catch (ParseException e) {
-            printHelp("Invalid command line argument: " + e.getCause().getMessage());
+            printHelp("Invalid command line argument: "
+                    + (e.getCause() == null ? e.getMessage() : e.getCause().getMessage()));
             System.exit(4);
             return;
         } catch (IllegalArgumentException e) {

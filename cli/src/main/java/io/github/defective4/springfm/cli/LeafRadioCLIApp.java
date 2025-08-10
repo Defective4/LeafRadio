@@ -25,9 +25,11 @@ public class LeafRadioCLIApp {
 
     public static class Builder {
         private boolean changeFrequency;
+        private boolean changeGain;
         private boolean changeService;
         private final SpringFMClient client;
         private int frequency;
+        private float gain;
         private String profile;
         private int service;
         private boolean verbose;
@@ -39,7 +41,10 @@ public class LeafRadioCLIApp {
         public LeafRadioCLIApp build() {
             if (changeFrequency && !changeService)
                 throw new IllegalArgumentException("You need to specify a service index to change frequency.");
-            return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency);
+            if (changeGain && !changeService)
+                throw new IllegalArgumentException("You need to specify a service index to adjust gain.");
+            return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency,
+                    changeGain, gain);
         }
 
         public Builder frequency(int frequency) {
@@ -48,8 +53,15 @@ public class LeafRadioCLIApp {
             return this;
         }
 
+        public Builder gain(float gain) {
+            if (gain < 0) throw new IllegalArgumentException("gain < 0");
+            this.gain = gain;
+            changeGain = true;
+            return this;
+        }
+
         public Builder profile(String profile) {
-            this.profile = profile;
+            this.profile = Objects.requireNonNull(profile);
             return this;
         }
 
@@ -69,19 +81,21 @@ public class LeafRadioCLIApp {
     private final AudioPlayer audioPlayer;
     private AuthResponse auth;
     private final boolean changeFrequency;
+    private final boolean changeGain;
     private final boolean changeService;
     private final SpringFMClient client;
     private ServiceInformation currentService;
-    private final int frequency;
+    private int frequency;
+    private float gain;
     private MessageDigest md;
     private ProfileInformation profile;
+
     private final String profileName;
     private final int service;
-
     private final boolean verbose;
 
     private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
-            boolean changeFrequency, int frequency) {
+            boolean changeFrequency, int frequency, boolean changeGain, float gain) {
         this.client = client;
         profileName = profile;
         this.verbose = verbose;
@@ -89,6 +103,8 @@ public class LeafRadioCLIApp {
         this.service = service;
         this.changeFrequency = changeFrequency;
         this.frequency = frequency;
+        this.changeGain = changeGain;
+        this.gain = gain;
         audioPlayer = new AudioPlayer(client);
         audioPlayer.addListener(new AudioPlayerEventAdapter() {
 
@@ -96,7 +112,14 @@ public class LeafRadioCLIApp {
             public void analogTuned(float frequency) {
                 float step = currentService == null || currentService.getAnalogTuning() == null ? 1
                         : currentService.getAnalogTuning().getStep();
+                LeafRadioCLIApp.this.frequency = (int) (frequency * step);
                 logVerbose("Server changed frequency to " + RadioUtils.createFrequencyString(frequency * step));
+            }
+
+            @Override
+            public void gainChanged(float newGain) {
+                LeafRadioCLIApp.this.gain = newGain;
+                logVerbose("Server changed gain to " + newGain + " dB");
             }
 
             @Override
@@ -133,9 +156,13 @@ public class LeafRadioCLIApp {
 
         validateService();
         validateFrequency();
+        validateGain();
+
+        System.out.println(changeGain);
 
         changeService();
         changeFrequency();
+        changeGain();
 
         logVerbose("Starting player");
         audioPlayer.setProfileVerifier(md, auth);
@@ -224,6 +251,13 @@ public class LeafRadioCLIApp {
         }
     }
 
+    private void changeGain() throws IOException {
+        if (changeGain) {
+            logVerbose("Sending gain adjust command (gain = " + gain + " dB)");
+            client.setGain(profile.getName(), gain);
+        }
+    }
+
     private void changeService() throws IOException {
         if (changeService) {
             logVerbose("Sending service change command (service = " + service + ")");
@@ -247,6 +281,16 @@ public class LeafRadioCLIApp {
                 throw new IllegalArgumentException(String.format("Frequency %s is out of range of %s - %s",
                         RadioUtils.createFrequencyString(frequency), RadioUtils.createFrequencyString(min),
                         RadioUtils.createFrequencyString(max)));
+        }
+    }
+
+    private void validateGain() {
+        if (changeGain) {
+            if (currentService == null || !currentService.getGainInfo().isGainSupported())
+                throw new IllegalArgumentException("This service doesn't support gain adjusting");
+            float maxGain = currentService.getGainInfo().getMaxGain();
+            if (gain > maxGain) throw new IllegalArgumentException(
+                    String.format("Gain %s dB is out of range of 0 - %s dB", gain, maxGain));
         }
     }
 
