@@ -31,9 +31,11 @@ public class AudioPlayer {
     private Future<?> audioTask;
     private AuthResponse auth;
     private final SpringFMClient client;
+    private boolean dataStarted;
     private Future<?> dataTask;
     private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
     private MessageDigest md;
+
     private boolean muted;
 
     public AudioPlayer(SpringFMClient client) {
@@ -76,28 +78,11 @@ public class AudioPlayer {
     public void start(String profile) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         if (isAlive()) stop();
         setMuted(false);
-        AudioInputStream audioStream = client.openAudioStream(profile);
-        reopenAudioSink(audioStream.getFormat());
-        audioInputStream = new DataInputStream(audioStream);
         controlInputStream = client.openControlStream(profile);
-        audioTask = ThreadUtils.submit(() -> {
-            try {
-                byte[] buffer = new byte[4096];
-                while (true) {
-                    audioInputStream.readFully(buffer);
-                    if (SerializableAudioFormat.Codec.isSwitchFrame(buffer)) {
-                        AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
-                        reopenAudioSink(newFormat);
-                        listeners.forEach(ls -> ls.audioFormatChanged(newFormat));
-                    } else if (!isMuted()) audioSink.write(buffer, 0, buffer.length);
-                }
-            } catch (Exception e) {
-                listeners.forEach(ls -> ls.playerErrored(e));
-                try {
-                    stop();
-                } catch (IOException e1) {}
-            }
-        });
+        dataStarted = false;
+
+        Object lock = new Object();
+
         dataTask = ThreadUtils.submit(() -> {
             try {
                 if (md == null) {
@@ -110,7 +95,11 @@ public class AudioPlayer {
                         throw new IOException("Configuration hash mismatch");
                     }
                 }
-                while (true) {
+                dataStarted = true;
+                synchronized (lock) {
+                    lock.notify();
+                }
+                while (controlInputStream != null) {
                     Packet packet = Packet.fromStream(controlInputStream);
                     PacketPayload payload = packet.getPayload();
                     switch (payload.getKey().toLowerCase()) {
@@ -144,15 +133,49 @@ public class AudioPlayer {
                     }
                 }
             } catch (Exception e2) {
+                synchronized (lock) {
+                    lock.notify();
+                }
                 listeners.forEach(ls -> ls.playerErrored(e2));
                 try {
                     stop();
                 } catch (IOException e) {}
             }
         });
+
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {}
+        }
+
+        if (!dataStarted) return;
+        AudioInputStream audioStream = client.openAudioStream(profile);
+        reopenAudioSink(audioStream.getFormat());
+        audioInputStream = new DataInputStream(audioStream);
+
+        audioTask = ThreadUtils.submit(() -> {
+            try {
+                byte[] buffer = new byte[4096];
+                while (audioInputStream != null) {
+                    audioInputStream.readFully(buffer);
+                    if (SerializableAudioFormat.Codec.isSwitchFrame(buffer)) {
+                        AudioFormat newFormat = SerializableAudioFormat.Codec.fromSwitchFrame(buffer);
+                        reopenAudioSink(newFormat);
+                        listeners.forEach(ls -> ls.audioFormatChanged(newFormat));
+                    } else if (!isMuted()) audioSink.write(buffer, 0, buffer.length);
+                }
+            } catch (Exception e) {
+                listeners.forEach(ls -> ls.playerErrored(e));
+                try {
+                    stop();
+                } catch (IOException e1) {}
+            }
+        });
     }
 
     public void stop() throws IOException {
+        dataStarted = false;
         if (audioSink != null) audioSink.close();
         if (audioTask != null) audioTask.cancel(true);
         if (dataTask != null) dataTask.cancel(true);
