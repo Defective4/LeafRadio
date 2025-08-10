@@ -2,6 +2,7 @@ package io.github.defective4.springfm.client.audio;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import io.github.defective4.springfm.client.SpringFMClient;
 import io.github.defective4.springfm.client.utils.ThreadUtils;
 import io.github.defective4.springfm.server.data.AudioAnnotation;
+import io.github.defective4.springfm.server.data.AuthResponse;
 import io.github.defective4.springfm.server.data.PlayerCommand;
 import io.github.defective4.springfm.server.data.SerializableAudioFormat;
 import io.github.defective4.springfm.server.packet.Packet;
@@ -27,9 +29,11 @@ public class AudioPlayer {
     private DataInputStream audioInputStream, controlInputStream;
     private SourceDataLine audioSink;
     private Future<?> audioTask;
+    private AuthResponse auth;
     private final SpringFMClient client;
     private Future<?> dataTask;
     private final List<AudioPlayerEventListener> listeners = new CopyOnWriteArrayList<>();
+    private MessageDigest md;
     private boolean muted;
 
     public AudioPlayer(SpringFMClient client) {
@@ -61,6 +65,14 @@ public class AudioPlayer {
         this.muted = muted;
     }
 
+    public void setProfileVerifier(MessageDigest md, AuthResponse auth) {
+        this.md = md;
+        if (md == null)
+            this.auth = null;
+        else
+            this.auth = Objects.requireNonNull(auth);
+    }
+
     public void start(String profile) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         if (isAlive()) stop();
         setMuted(false);
@@ -80,14 +92,24 @@ public class AudioPlayer {
                     } else if (!isMuted()) audioSink.write(buffer, 0, buffer.length);
                 }
             } catch (Exception e) {
+                listeners.forEach(ls -> ls.playerErrored(e));
                 try {
                     stop();
                 } catch (IOException e1) {}
-                listeners.forEach(ls -> ls.playerErrored(e));
             }
         });
         dataTask = ThreadUtils.submit(() -> {
             try {
+                if (md == null) {
+                    controlInputStream.skip(controlInputStream.readInt());
+                } else {
+                    int hashLen = controlInputStream.readInt();
+                    byte[] hashBytes = new byte[hashLen];
+                    controlInputStream.readFully(hashBytes);
+                    if (!auth.verify(md, hashBytes)) {
+                        throw new IOException("Configuration hash mismatch");
+                    }
+                }
                 while (true) {
                     Packet packet = Packet.fromStream(controlInputStream);
                     PacketPayload payload = packet.getPayload();
@@ -122,10 +144,10 @@ public class AudioPlayer {
                     }
                 }
             } catch (Exception e2) {
+                listeners.forEach(ls -> ls.playerErrored(e2));
                 try {
                     stop();
                 } catch (IOException e) {}
-                listeners.forEach(ls -> ls.playerErrored(e2));
             }
         });
     }

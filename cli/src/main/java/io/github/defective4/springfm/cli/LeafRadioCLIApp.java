@@ -1,6 +1,8 @@
 package io.github.defective4.springfm.cli;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 
@@ -71,9 +73,11 @@ public class LeafRadioCLIApp {
     private final SpringFMClient client;
     private ServiceInformation currentService;
     private final int frequency;
+    private MessageDigest md;
     private ProfileInformation profile;
     private final String profileName;
     private final int service;
+
     private final boolean verbose;
 
     private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
@@ -96,6 +100,16 @@ public class LeafRadioCLIApp {
             }
 
             @Override
+            public void playerErrored(Exception ex) {
+                ex.printStackTrace();
+            }
+
+            @Override
+            public void playerStopped() {
+                System.exit(5);
+            }
+
+            @Override
             public void serviceChanged(int serviceIndex) {
                 if (serviceIndex < 0 || serviceIndex >= LeafRadioCLIApp.this.profile.getServices().size())
                     currentService = null;
@@ -108,10 +122,12 @@ public class LeafRadioCLIApp {
         });
     }
 
-    public void play() throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+    public void play()
+            throws IOException, UnsupportedAudioFileException, LineUnavailableException, NoSuchAlgorithmException {
         if (profileName == null) throw new IllegalArgumentException("Profile name is required to play the stream");
         logVerbose("Authenticating with the server");
         auth = client.auth();
+        md = MessageDigest.getInstance(auth.getHashAlgo());
         profile = auth.getProfiles().stream().filter(p -> p.getName().equals(profileName)).findAny()
                 .orElseThrow(() -> new IllegalArgumentException("Profile \"" + profileName + "\" was not found."));
 
@@ -121,6 +137,8 @@ public class LeafRadioCLIApp {
         changeService();
         changeFrequency();
 
+        logVerbose("Starting player");
+        audioPlayer.setProfileVerifier(md, auth);
         audioPlayer.start(profile.getName());
 
         synchronized (LeafRadioCLIApp.class) {
@@ -143,6 +161,11 @@ public class LeafRadioCLIApp {
             toPrint = auth.getProfiles();
 
         IndentationPrinter printer = new IndentationPrinter();
+
+        printer.println("Instance name: " + auth.getInstanceName());
+        printer.println("Config hash algorithm: " + auth.getHashAlgo());
+        printer.println("Profiles:");
+        printer.indentationUp();
 
         for (ProfileInformation profile : toPrint) {
             printer.println(profile.getName() + ":");
@@ -232,7 +255,7 @@ public class LeafRadioCLIApp {
             if (service >= profile.getServices().size())
                 throw new IllegalArgumentException("Service index out of bounds (index = " + service + ", size = "
                         + profile.getServices().size() + ")");
-            currentService = profile.getServices().get(service);
+            currentService = service < 0 ? null : profile.getServices().get(service);
         }
     }
 }
