@@ -158,8 +158,6 @@ public class LeafRadioCLIApp {
         validateFrequency();
         validateGain();
 
-        System.out.println(changeGain);
-
         changeService();
         changeFrequency();
         changeGain();
