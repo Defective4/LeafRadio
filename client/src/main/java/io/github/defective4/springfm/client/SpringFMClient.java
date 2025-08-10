@@ -37,6 +37,10 @@ public class SpringFMClient {
         this.baseURL = base;
     }
 
+    public void digitalTune(String profile, int station) throws IOException {
+        prepareConnection("profile/" + profile + "/tune/digital", Map.of("index", station));
+    }
+
     public void analogTune(String profile, int freq) throws IOException {
         prepareConnection("profile/" + profile + "/tune/analog", Map.of("frequency", freq));
     }

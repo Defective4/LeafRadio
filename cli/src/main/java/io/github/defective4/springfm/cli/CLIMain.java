@@ -28,7 +28,11 @@ public class CLIMain {
                     .argName("Hz").hasArg().build())
             .addOption(Option.builder("G").longOpt("gain").desc(
                     "Set service gain. Can only be used with services that support gain adjusting. Requires the --service option.")
-                    .argName("dB").hasArg().converter(Float::parseFloat).build());
+                    .argName("dB").hasArg().converter(Float::parseFloat).build())
+            .addOption(Option.builder("S").longOpt("station").argName("index").hasArg().converter(Integer::parseInt)
+                    .desc("Set service's station index. Can only be used with digital services. Requires the --service option.")
+                    .build())
+            .addOption(Option.builder("h").longOpt("help").desc("Show this help").build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -41,6 +45,11 @@ public class CLIMain {
             String[] subargs = new String[args.length - 1];
             System.arraycopy(args, 1, subargs, 0, subargs.length);
             CommandLine cli = new DefaultParser().parse(OPTIONS, subargs);
+            if (cli.hasOption('h')) {
+                printHelp(null);
+                System.exit(0);
+                return;
+            }
             if (cli.getArgs().length == 0) {
                 printHelp("Missing backend URL");
                 System.exit(1);
@@ -62,10 +71,8 @@ public class CLIMain {
             if (cli.hasOption('v')) builder.verbose();
             if (cli.hasOption('p')) builder.profile(cli.getOptionValue('p'));
             if (cli.hasOption('s')) builder.service(cli.getParsedOptionValue('s'));
-            if (cli.hasOption('F')) {
-                String freqString = cli.getOptionValue('F');
-                builder.frequency(RadioUtils.parseFrequencyString(freqString));
-            }
+            if (cli.hasOption('F')) builder.frequency(RadioUtils.parseFrequencyString(cli.getOptionValue('F')));
+            if (cli.hasOption('S')) builder.setStation(cli.getParsedOptionValue('S'));
             if (cli.hasOption('G')) builder.gain(cli.getParsedOptionValue('G'));
 
             LeafRadioCLIApp app = builder.build();
