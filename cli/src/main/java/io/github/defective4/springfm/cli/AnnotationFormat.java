@@ -6,7 +6,8 @@ import io.github.defective4.springfm.server.data.AudioAnnotation;
 
 public enum AnnotationFormat {
     JSON(s -> System.out.println(new AnnotationContainer(s).toJSON())),
-    TEXT(s -> System.out.println(s.getTitle().trim() + " | " + s.getDescription() + " | Music: " + !s.isNonMusic()));
+    TEXT(s -> System.out.println((s.getTitle() == null ? null : s.getTitle().trim()) + " | " + s.getDescription()
+            + " | Music: " + !s.isNonMusic()));
 
     private final Consumer<AudioAnnotation> printer;
 
