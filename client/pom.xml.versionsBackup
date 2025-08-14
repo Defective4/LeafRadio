@@ -5,21 +5,14 @@
     <parent>
         <groupId>io.github.defective4.radio.leafradio</groupId>
         <artifactId>LeafRadio</artifactId>
-        <version>0.2</version>
+        <version>0.1</version>
     </parent>
-    <artifactId>discord-integration</artifactId>
-
-    <repositories>
-        <repository>
-            <id>jitpack</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
+    <artifactId>client</artifactId>
     <dependencies>
         <dependency>
-            <groupId>com.github.JnCrMx</groupId>
-            <artifactId>discord-game-sdk4j</artifactId>
-            <version>v1.0.0</version>
+            <groupId>io.github.defective4.radio.springfm</groupId>
+            <artifactId>commons</artifactId>
+            <version>0.1</version>
         </dependency>
     </dependencies>
 </project>
