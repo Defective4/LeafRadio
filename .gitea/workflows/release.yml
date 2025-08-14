@@ -1,0 +1,17 @@
+on: create
+jobs:
+  release:
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: raspbian-latest
+    name: Release
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout
+    - name: Log git history
+      run: |
+        echo "**Changelog**  " > log.txt |
+        git log -n 10 --format="- [\`%h\`](https://raspberry.local:3000/Defective/LeafRadio/commit/%H) %s" >> log.txt
+    - run: mvn package
+      name: Package Maven project
+    - name: Release binary
+      run: tea release create --title "Release ${{ github.ref_name }}" --note-file log.txt -a cli/target/cli-*.jar --repo ${{ github.repository }} "${{ github.ref_name }}"
