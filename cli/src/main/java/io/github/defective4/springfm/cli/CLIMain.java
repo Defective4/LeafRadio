@@ -40,7 +40,12 @@ public class CLIMain {
             .addOption(Option.builder("f").longOpt("annotations-format")
                     .desc("Display annotations in the specified format. Available values: "
                             + Arrays.toString(AnnotationFormat.values()) + ". Default value: " + AnnotationFormat.TEXT)
-                    .hasArg().argName("format").converter(s -> AnnotationFormat.valueOf(s.toUpperCase())).build());
+                    .hasArg().argName("format").converter(s -> AnnotationFormat.valueOf(s.toUpperCase())).build())
+            .addOption(Option.builder("D").longOpt("discord-rpc").desc("Display current listening activity on Discord")
+                    .build())
+            .addOption(Option.builder().longOpt("discord-app-id")
+                    .desc("Use custom Discord application ID. Defaults to a built-in ID.").hasArg().argName("app id")
+                    .converter(Long::parseLong).build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -85,6 +90,9 @@ public class CLIMain {
 
             if (cli.hasOption('a')) builder.displayAnnotations();
             if (cli.hasOption('f')) builder.annotationsFormat(cli.getParsedOptionValue('f'));
+
+            if (cli.hasOption('D')) builder.enableDiscord();
+            if (cli.hasOption("discord-app-id")) builder.discordAppId(cli.getParsedOptionValue("discord-app-id"));
 
             LeafRadioCLIApp app = builder.build();
             switch (args[0].toLowerCase()) {

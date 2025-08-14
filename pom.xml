@@ -24,5 +24,6 @@
     <modules>
     	<module>client</module>
     	<module>cli</module>
+    	<module>discord-integration</module>
     </modules>
 </project>
