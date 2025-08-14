@@ -373,7 +373,8 @@ public class LeafRadioCLIApp {
         if (frequency >= 0) {
             discord.update("Listening to " + RadioUtils.createFrequencyString(frequency), null);
             return;
-        } else if (station >= 0) {
+        }
+        if (station >= 0) {
             if (profile != null) {
                 if (service >= 0 && service < profile.getServices().size()) {
                     ServiceInformation svc = profile.getServices().get(service);
