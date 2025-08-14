@@ -43,6 +43,8 @@ public class CLIMain {
                     .hasArg().argName("format").converter(s -> AnnotationFormat.valueOf(s.toUpperCase())).build())
             .addOption(Option.builder("D").longOpt("discord-rpc").desc("Display current listening activity on Discord")
                     .build())
+            .addOption(Option.builder("m").longOpt("auto-mute")
+                    .desc("Tries to automatically detect non-music segments and mute the audio during them.").build())
             .addOption(Option.builder().longOpt("discord-app-id")
                     .desc("Use custom Discord application ID. Defaults to a built-in ID.").hasArg().argName("app id")
                     .converter(Long::parseLong).build());
@@ -90,6 +92,7 @@ public class CLIMain {
 
             if (cli.hasOption('a')) builder.displayAnnotations();
             if (cli.hasOption('f')) builder.annotationsFormat(cli.getParsedOptionValue('f'));
+            if (cli.hasOption('m')) builder.autoMuteNonMusic();
 
             if (cli.hasOption('D')) builder.enableDiscord();
             if (cli.hasOption("discord-app-id")) builder.discordAppId(cli.getParsedOptionValue("discord-app-id"));

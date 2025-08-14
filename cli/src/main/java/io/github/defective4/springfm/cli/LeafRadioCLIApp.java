@@ -28,6 +28,7 @@ public class LeafRadioCLIApp {
 
     public static class Builder {
         private AnnotationFormat annotationsFormat = AnnotationFormat.TEXT;
+        private boolean autoMuteNonMusic;
         private boolean changeFrequency;
         private boolean changeGain;
         private boolean changeService;
@@ -52,6 +53,11 @@ public class LeafRadioCLIApp {
             return this;
         }
 
+        public Builder autoMuteNonMusic() {
+            autoMuteNonMusic = true;
+            return this;
+        }
+
         public LeafRadioCLIApp build() {
             if (changeFrequency && !changeService)
                 throw new IllegalArgumentException("You need to specify a service index to change frequency.");
@@ -59,7 +65,7 @@ public class LeafRadioCLIApp {
                 throw new IllegalArgumentException("You need to specify a service index to adjust gain.");
             return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency,
                     changeGain, gain, changeStation, station, displayAnnotations, annotationsFormat, enableDiscord,
-                    discordAppId);
+                    discordAppId, autoMuteNonMusic);
         }
 
         public Builder discordAppId(long discordAppId) {
@@ -121,6 +127,7 @@ public class LeafRadioCLIApp {
     private final AnnotationFormat annotationsFormat;
     private final AudioPlayer audioPlayer;
     private AuthResponse auth;
+    private final boolean autoMuteNonMusic;
     private final boolean changeFrequency;
     private final boolean changeGain;
     private final boolean changeService;
@@ -128,8 +135,8 @@ public class LeafRadioCLIApp {
     private final SpringFMClient client;
     private ServiceInformation currentService;
     private final DiscordIntegration discord;
-    private final boolean displayAnnotations;
 
+    private final boolean displayAnnotations;
     private int frequency;
     private float gain;
     private AudioAnnotation lastAnnotation;
@@ -137,14 +144,16 @@ public class LeafRadioCLIApp {
     private MessageDigest md;
     private ProfileInformation profile;
     private final String profileName;
-    private final int service;
 
+    private final int service;
     private int station;
+
     private final boolean verbose;
 
     private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
             boolean changeFrequency, int frequency, boolean changeGain, float gain, boolean changeStation, int station,
-            boolean displayAnnotations, AnnotationFormat annotationsFormat, boolean enableDiscord, long discordAppId) {
+            boolean displayAnnotations, AnnotationFormat annotationsFormat, boolean enableDiscord, long discordAppId,
+            boolean autoMuteNonMusic) {
         this.client = client;
         profileName = profile;
         this.verbose = verbose;
@@ -158,6 +167,7 @@ public class LeafRadioCLIApp {
         this.station = station;
         this.displayAnnotations = displayAnnotations;
         this.annotationsFormat = annotationsFormat;
+        this.autoMuteNonMusic = autoMuteNonMusic;
         audioPlayer = new AudioPlayer(client);
         audioPlayer.addListener(new AudioPlayerEventAdapter() {
 
@@ -177,6 +187,9 @@ public class LeafRadioCLIApp {
                     if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
                 } else if (System.currentTimeMillis() - lastAnnotationTime < 5000) return;
                 lastAnnotationTime = System.currentTimeMillis();
+                if (LeafRadioCLIApp.this.autoMuteNonMusic) {
+                    audioPlayer.setMuted(annotation.isNonMusic());
+                }
                 updateDiscordStatus();
             }
 
