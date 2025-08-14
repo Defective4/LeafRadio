@@ -237,7 +237,7 @@ public class LeafRadioCLIApp {
                     }
                 }
 
-                if (autoMuteNonMusic) audioPlayer.setMuted(isMusic);
+                if (autoMuteNonMusic) audioPlayer.setMuted(!isMusic);
                 if (!updated) {
                     if (LeafRadioCLIApp.this.dynamicDiscordStatus && !isMusic) {
                         updateDiscordStatus(new AudioAnnotation(lastAnnotation.getTitle(), "No music", true));

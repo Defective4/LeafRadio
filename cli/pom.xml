@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.defective4.radio.leafradio</groupId>
         <artifactId>LeafRadio</artifactId>
-        <version>0.2</version>
+        <version>0.2.1</version>
     </parent>
     <artifactId>cli</artifactId>
     <build>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>io.github.defective4.radio.leafradio</groupId>
             <artifactId>discord-integration</artifactId>
-            <version>0.2</version>
+            <version>0.2.1</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>io.github.defective4.radio.leafradio</groupId>
             <artifactId>client</artifactId>
-            <version>0.2</version>
+            <version>0.2.1</version>
         </dependency>
     </dependencies>
 </project>
