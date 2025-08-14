@@ -47,7 +47,16 @@ public class CLIMain {
                     .desc("Tries to automatically detect non-music segments and mute the audio during them.").build())
             .addOption(Option.builder().longOpt("discord-app-id")
                     .desc("Use custom Discord application ID. Defaults to a built-in ID.").hasArg().argName("app id")
-                    .converter(Long::parseLong).build());
+                    .converter(Long::parseLong).build())
+            .addOption(Option.builder().longOpt("song-pattern")
+                    .desc("A description pattern used to determine if a song is currently playing.").hasArg()
+                    .argName("pattern").build())
+            .addOption(Option.builder().longOpt("song-pattern-type").hasArg().argName("type")
+                    .desc("Type of pattern specified in --song-pattern. Can be one of "
+                            + Arrays.toString(SongPatternType.values()) + ". Defaults to " + SongPatternType.PREFIX)
+                    .converter(s -> SongPatternType.valueOf(s.toUpperCase())).build())
+            .addOption(Option.builder().longOpt("dynamic-discord-status")
+                    .desc("Modifies discord status based on song pattern and music status").build());
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -93,6 +102,11 @@ public class CLIMain {
             if (cli.hasOption('a')) builder.displayAnnotations();
             if (cli.hasOption('f')) builder.annotationsFormat(cli.getParsedOptionValue('f'));
             if (cli.hasOption('m')) builder.autoMuteNonMusic();
+
+            if (cli.hasOption("song-pattern")) builder.songPattern(cli.getOptionValue("song-pattern"));
+            if (cli.hasOption("song-pattern-type"))
+                builder.songPatternType(cli.getParsedOptionValue("song-pattern-type"));
+            if (cli.hasOption("dynamic-discord-status")) builder.dynamicDiscordStatus();
 
             if (cli.hasOption('D')) builder.enableDiscord();
             if (cli.hasOption("discord-app-id")) builder.discordAppId(cli.getParsedOptionValue("discord-app-id"));

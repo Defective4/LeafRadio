@@ -36,11 +36,14 @@ public class LeafRadioCLIApp {
         private final SpringFMClient client;
         private long discordAppId = DEFAULT_DISCORD_APP_ID;
         private boolean displayAnnotations;
+        private boolean dynamicDiscordStatus;
         private boolean enableDiscord;
         private int frequency = -1;
         private float gain;
         private String profile;
         private int service;
+        private String songPattern;
+        private SongPatternType songPatternType = SongPatternType.PREFIX;
         private int station = -1;
         private boolean verbose;
 
@@ -65,7 +68,7 @@ public class LeafRadioCLIApp {
                 throw new IllegalArgumentException("You need to specify a service index to adjust gain.");
             return new LeafRadioCLIApp(client, profile, verbose, changeService, service, changeFrequency, frequency,
                     changeGain, gain, changeStation, station, displayAnnotations, annotationsFormat, enableDiscord,
-                    discordAppId, autoMuteNonMusic);
+                    discordAppId, autoMuteNonMusic, songPattern, songPatternType, dynamicDiscordStatus);
         }
 
         public Builder discordAppId(long discordAppId) {
@@ -76,6 +79,11 @@ public class LeafRadioCLIApp {
 
         public Builder displayAnnotations() {
             displayAnnotations = true;
+            return this;
+        }
+
+        public Builder dynamicDiscordStatus() {
+            dynamicDiscordStatus = true;
             return this;
         }
 
@@ -116,6 +124,16 @@ public class LeafRadioCLIApp {
             return this;
         }
 
+        public Builder songPattern(String songPattern) {
+            this.songPattern = Objects.requireNonNull(songPattern);
+            return this;
+        }
+
+        public Builder songPatternType(SongPatternType patternType) {
+            songPatternType = Objects.requireNonNull(patternType);
+            return this;
+        }
+
         public Builder verbose() {
             verbose = true;
             return this;
@@ -137,15 +155,21 @@ public class LeafRadioCLIApp {
     private final DiscordIntegration discord;
 
     private final boolean displayAnnotations;
+    private final boolean dynamicDiscordStatus;
     private int frequency;
     private float gain;
     private AudioAnnotation lastAnnotation;
     private long lastAnnotationTime = 0;
     private MessageDigest md;
     private ProfileInformation profile;
-    private final String profileName;
 
+    private final String profileName;
     private final int service;
+
+    private final String songPattern;
+
+    private final SongPatternType songPatternType;
+
     private int station;
 
     private final boolean verbose;
@@ -153,7 +177,8 @@ public class LeafRadioCLIApp {
     private LeafRadioCLIApp(SpringFMClient client, String profile, boolean verbose, boolean changeService, int service,
             boolean changeFrequency, int frequency, boolean changeGain, float gain, boolean changeStation, int station,
             boolean displayAnnotations, AnnotationFormat annotationsFormat, boolean enableDiscord, long discordAppId,
-            boolean autoMuteNonMusic) {
+            boolean autoMuteNonMusic, String songPattern, SongPatternType songPatternType,
+            boolean dynamicDiscordStatus) {
         this.client = client;
         profileName = profile;
         this.verbose = verbose;
@@ -168,6 +193,9 @@ public class LeafRadioCLIApp {
         this.displayAnnotations = displayAnnotations;
         this.annotationsFormat = annotationsFormat;
         this.autoMuteNonMusic = autoMuteNonMusic;
+        this.songPattern = songPattern;
+        this.songPatternType = songPatternType;
+        this.dynamicDiscordStatus = dynamicDiscordStatus;
         audioPlayer = new AudioPlayer(client);
         audioPlayer.addListener(new AudioPlayerEventAdapter() {
 
@@ -187,10 +215,36 @@ public class LeafRadioCLIApp {
                     if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
                 } else if (System.currentTimeMillis() - lastAnnotationTime < 5000) return;
                 lastAnnotationTime = System.currentTimeMillis();
-                if (LeafRadioCLIApp.this.autoMuteNonMusic) {
-                    audioPlayer.setMuted(annotation.isNonMusic());
+                boolean isMusic = !annotation.isNonMusic();
+                boolean updated = false;
+                if (isMusic && annotation.getDescription() != null) {
+                    if (songPattern != null) {
+                        switch (songPatternType) {
+                            case PREFIX:
+                                isMusic = annotation.getDescription().startsWith(songPattern);
+                                if (isMusic && LeafRadioCLIApp.this.dynamicDiscordStatus) {
+                                    updateDiscordStatus(new AudioAnnotation(annotation.getTitle(),
+                                            annotation.getDescription().substring(songPattern.length()), !isMusic));
+                                    updated = true;
+                                }
+                                break;
+                            case REGEX:
+                                isMusic = annotation.getDescription().matches(songPattern);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                 }
-                updateDiscordStatus();
+
+                if (autoMuteNonMusic) audioPlayer.setMuted(isMusic);
+                if (!updated) {
+                    if (LeafRadioCLIApp.this.dynamicDiscordStatus && !isMusic) {
+                        updateDiscordStatus(new AudioAnnotation(lastAnnotation.getTitle(), "No music", true));
+                    } else {
+                        updateDiscordStatus();
+                    }
+                }
             }
 
             @Override
@@ -377,10 +431,15 @@ public class LeafRadioCLIApp {
     }
 
     private void updateDiscordStatus() {
+        updateDiscordStatus(lastAnnotation);
+    }
+
+    private void updateDiscordStatus(AudioAnnotation annotation) {
+        System.out.println(annotation);
         if (discord == null) return;
-        if (lastAnnotation != null) {
-            discord.update(lastAnnotation.getDescription(),
-                    lastAnnotation.getTitle() == null ? null : lastAnnotation.getTitle().trim());
+        if (annotation != null) {
+            discord.update(annotation.getDescription(),
+                    annotation.getTitle() == null ? null : annotation.getTitle().trim());
             return;
         }
         if (frequency >= 0) {
