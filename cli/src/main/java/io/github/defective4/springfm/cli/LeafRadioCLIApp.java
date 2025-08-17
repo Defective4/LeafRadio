@@ -435,7 +435,6 @@ public class LeafRadioCLIApp {
     }
 
     private void updateDiscordStatus(AudioAnnotation annotation) {
-        System.out.println(annotation);
         if (discord == null) return;
         if (annotation != null) {
             discord.update(annotation.getDescription(),
