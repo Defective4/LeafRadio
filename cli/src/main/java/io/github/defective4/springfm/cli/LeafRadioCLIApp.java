@@ -209,21 +209,15 @@ public class LeafRadioCLIApp {
 
             @Override
             public void annotationReceived(AudioAnnotation annotation) {
-                if (!annotation.equals(lastAnnotation)) {
-                    lastAnnotation = annotation;
-                    if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
-                }
                 boolean isMusic = !annotation.isNonMusic();
-                boolean updated = false;
                 if (isMusic && annotation.getDescription() != null) {
                     if (songPattern != null) {
                         switch (songPatternType) {
                             case PREFIX:
                                 isMusic = annotation.getDescription().startsWith(songPattern);
                                 if (isMusic && LeafRadioCLIApp.this.dynamicDiscordStatus) {
-                                    updateDiscordStatus(new AudioAnnotation(annotation.getTitle(),
-                                            annotation.getDescription().substring(songPattern.length()), !isMusic));
-                                    updated = true;
+                                    annotation = new AudioAnnotation(annotation.getTitle(),
+                                            annotation.getDescription().substring(songPattern.length()), !isMusic);
                                 }
                                 break;
                             case REGEX:
@@ -235,14 +229,16 @@ public class LeafRadioCLIApp {
                     }
                 }
 
-                if (autoMuteNonMusic) audioPlayer.setMuted(!isMusic);
-                if (!updated) {
-                    if (LeafRadioCLIApp.this.dynamicDiscordStatus && !isMusic) {
-                        updateDiscordStatus(new AudioAnnotation(annotation.getTitle(), "No music", true));
-                    } else {
-                        updateDiscordStatus();
-                    }
+                if (LeafRadioCLIApp.this.dynamicDiscordStatus && !isMusic) {
+                    annotation = new AudioAnnotation(annotation.getTitle(), "No music", true);
                 }
+                if (!annotation.equals(lastAnnotation)) {
+                    lastAnnotation = annotation;
+                    if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
+                }
+
+                if (autoMuteNonMusic) audioPlayer.setMuted(!isMusic);
+                updateDiscordStatus();
             }
 
             @Override
@@ -429,14 +425,10 @@ public class LeafRadioCLIApp {
     }
 
     private void updateDiscordStatus() {
-        updateDiscordStatus(lastAnnotation);
-    }
-
-    private void updateDiscordStatus(AudioAnnotation annotation) {
         if (discord == null) return;
-        if (annotation != null) {
-            discord.update(annotation.getDescription(),
-                    annotation.getTitle() == null ? null : annotation.getTitle().trim());
+        if (lastAnnotation != null) {
+            discord.update(lastAnnotation.getDescription(),
+                    lastAnnotation.getTitle() == null ? null : lastAnnotation.getTitle().trim());
             return;
         }
         if (frequency >= 0) {
