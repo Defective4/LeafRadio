@@ -159,7 +159,6 @@ public class LeafRadioCLIApp {
     private int frequency;
     private float gain;
     private AudioAnnotation lastAnnotation;
-    private long lastAnnotationTime = 0;
     private MessageDigest md;
     private ProfileInformation profile;
 
@@ -213,8 +212,7 @@ public class LeafRadioCLIApp {
                 if (!annotation.equals(lastAnnotation)) {
                     lastAnnotation = annotation;
                     if (displayAnnotations) annotationsFormat.getPrinter().accept(annotation);
-                } else if (System.currentTimeMillis() - lastAnnotationTime < 5000) return;
-                lastAnnotationTime = System.currentTimeMillis();
+                }
                 boolean isMusic = !annotation.isNonMusic();
                 boolean updated = false;
                 if (isMusic && annotation.getDescription() != null) {
@@ -240,7 +238,7 @@ public class LeafRadioCLIApp {
                 if (autoMuteNonMusic) audioPlayer.setMuted(!isMusic);
                 if (!updated) {
                     if (LeafRadioCLIApp.this.dynamicDiscordStatus && !isMusic) {
-                        updateDiscordStatus(new AudioAnnotation(lastAnnotation.getTitle(), "No music", true));
+                        updateDiscordStatus(new AudioAnnotation(annotation.getTitle(), "No music", true));
                     } else {
                         updateDiscordStatus();
                     }
